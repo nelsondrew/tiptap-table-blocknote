@@ -531,7 +531,7 @@ export default function Home() {
         
         :global(.bn-table td, .bn-table th, .prosemirror-table td, .prosemirror-table th) {
           min-width: 120px !important;
-          border: 1px solid #e5e7eb !important;
+          border: 2px solid rgb(229, 231, 235) !important;
           padding: 12px 16px !important;
           vertical-align: top !important;
           box-sizing: border-box !important;
@@ -601,6 +601,7 @@ export default function Home() {
           cursor: col-resize;
           opacity: 0;
           transition: opacity 0.2s;
+
         }
         
         :global(.bn-table:hover .column-resize-handle, .prosemirror-table:hover .column-resize-handle) {
