@@ -201,7 +201,6 @@ export const BlockNoteTable = Table.extend({
             table.className = "bn-table prosemirror-table";
             // Add border styling directly
             table.style.border = "2px solid #e5e7eb";
-            table.style.borderRadius = "8px";
             table.style.borderCollapse = "separate";
             table.style.borderSpacing = "0";
             table.style.width = "100%";

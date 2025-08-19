@@ -501,35 +501,32 @@ export default function Home() {
         
         /* BlockNote-inspired table styles */
         :global(.bn-block-content) {
-          position: relative;
-          margin: 16px 0;
+          width: 100%;
+          padding: 3px 0;
+          transition: font-size .2s;
+          display: flex;
         }
         
       
         :global(.tableWrapper) {
+          --bn-table-widget-size: 22px;
+          --bn-table-handle-size: 9px;
+          padding: var(--bn-table-handle-size) var(--bn-table-widget-size) var(--bn-table-widget-size) var(--bn-table-handle-size);
+          width: 100%;
           position: relative;
-          overflow-x: auto;
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          overflow-y: hidden;
         }
         
-        :global(.tableWrapper-inner) {
-          position: relative;
-          min-width: 100%;
-        }
         
         :global(.bn-table, .prosemirror-table) {
-          border-collapse: separate !important;
-          border-spacing: 0 !important;
-          table-layout: fixed !important;
-          width: 100% !important;
-          margin: 0 !important;
-          overflow: hidden !important;
-          border: 2px solid #e5e7eb !important;
-          border-radius: 8px !important;
-          background-color: white !important;
-          font-size: 14px;
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          overflow: hidden;
+          word-break: break-word;
+          width: auto !important;
+          --default-cell-min-width: 120px;
+          min-width: 360px;
         }
         
         :global(.bn-table td, .bn-table th, .prosemirror-table td, .prosemirror-table th) {
@@ -592,17 +589,18 @@ export default function Home() {
         
         /* Column resize handles */
         :global(.column-resize-handle) {
+          z-index: 20;
+          pointer-events: none;
+          background-color: #adf;
+          width: 4px;
           position: absolute;
-          right: -2px;
           top: 0;
           bottom: 0;
-          width: 4px;
-          background-color: #3b82f6;
+          right: -2px;
           pointer-events: auto;
           cursor: col-resize;
           opacity: 0;
           transition: opacity 0.2s;
-          z-index: 10;
         }
         
         :global(.bn-table:hover .column-resize-handle, .prosemirror-table:hover .column-resize-handle) {
