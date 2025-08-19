@@ -14,6 +14,257 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import { useCallback, useState, useEffect } from 'react'
 import BlockNoteTableExtensions from '../extensions/BlockNoteTable'
+import styled from '@emotion/styled'
+import { css, Global } from '@emotion/react'
+import GlobalStyles from "./GlobalStyles";
+
+// Styled components
+const EditorContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+`
+
+const EditorTitle = styled.h1`
+  color: #333;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin-bottom: 20px;
+`
+
+const EditorWrapper = styled.div`
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+`
+
+const MenuBarContainer = styled.div`
+  border: 1px solid #ccc;
+  border-bottom: none;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  background-color: #f5f5f5;
+`
+
+const MenuButton = styled.button<{ isActive?: boolean; isDisabled?: boolean; isDanger?: boolean }>`
+  background-color: ${props => 
+    props.isDanger && props.isActive ? '#ff4444' : 
+    props.isActive ? '#007acc' : 'white'
+  };
+  color: ${props => 
+    props.isDanger && props.isActive ? 'white' :
+    props.isActive ? 'white' : 
+    props.isDisabled ? '#666666' : 'black'
+  };
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  cursor: ${props => props.isDisabled ? 'not-allowed' : 'pointer'};
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background-color: ${props => 
+      props.isDanger && props.isActive ? '#dd3333' :
+      props.isActive ? '#0066aa' : '#f0f0f0'
+    };
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
+
+const EditorContentWrapper = styled.div`
+  min-height: 400px;
+  padding: 15px;
+  outline: none;
+  
+  .ProseMirror {
+    outline: none;
+    min-height: 400px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    
+    p {
+      margin: 0.75em 0;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin: 1.5em 0 0.5em 0;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+    
+    ul, ol {
+      margin: 0.75em 0;
+      padding-left: 1.5em;
+    }
+    
+    li {
+      margin: 0.25em 0;
+    }
+    
+    blockquote {
+      border-left: 4px solid #e5e7eb;
+      margin: 1.5em 0;
+      padding-left: 1em;
+      color: #6b7280;
+      font-style: italic;
+    }
+    
+    code {
+      background-color: #f3f4f6;
+      padding: 0.25em 0.5em;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+    }
+    
+    hr {
+      border: none;
+      border-top: 2px solid #e5e7eb;
+      margin: 2em 0;
+    }
+    
+    /* Task List Styles */
+    ul[data-type="taskList"] {
+      list-style: none;
+      padding: 0;
+      margin: 0.75em 0;
+      
+      p {
+        margin: 0;
+      }
+      
+      li {
+        display: flex;
+        align-items: flex-start;
+        margin: 0.5em 0;
+        
+        > label {
+          flex: 0 0 auto;
+          margin-right: 0.5rem;
+          user-select: none;
+          margin-top: 2px;
+          
+          input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+          }
+        }
+        
+        > div {
+          flex: 1 1 auto;
+        }
+        
+        &[data-checked="true"] > div {
+          text-decoration: line-through;
+          color: #9ca3af;
+        }
+      }
+    }
+    
+    /* Link Styles */
+    a {
+      color: #3b82f6;
+      text-decoration: underline;
+      cursor: pointer;
+      
+      &:hover {
+        color: #1d4ed8;
+      }
+    }
+    
+    /* Selection Styles */
+    ::selection {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+  }
+`
+
+const LoadingContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+`
+
+const LoadingWrapper = styled.div`
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9f9f9;
+`
+
+const LoadingContent = styled.div`
+  text-align: center;
+`
+
+const Spinner = styled.div`
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007acc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`
+
+const LoadingText = styled.p`
+  color: #666;
+  font-family: system-ui, -apple-system, sans-serif;
+`
+
+// Global styles for any remaining global needs
+const globalStyles = css`
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Ensure smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Focus styles for accessibility */
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+`
 
 const MenuBar = ({ editor }: { editor: any }) => {
   const addTable = useCallback(() => {
@@ -47,352 +298,186 @@ const MenuBar = ({ editor }: { editor: any }) => {
   }
 
   return (
-    <div style={{ 
-      border: '1px solid #ccc', 
-      borderBottom: 'none', 
-      padding: '10px', 
-      display: 'flex', 
-      flexWrap: 'wrap', 
-      gap: '5px',
-      backgroundColor: '#f5f5f5'
-    }}>
+    <MenuBarContainer>
       {/* Text Formatting */}
-      <button
+      <MenuButton
         onClick={() => editor.chain().focus().toggleBold().run()}
         disabled={!editor.can().chain().focus().toggleBold().run()}
-        style={{ 
-          backgroundColor: editor.isActive('bold') ? '#007acc' : 'white',
-          color: editor.isActive('bold') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('bold')}
       >
         Bold
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
         disabled={!editor.can().chain().focus().toggleItalic().run()}
-        style={{ 
-          backgroundColor: editor.isActive('italic') ? '#007acc' : 'white',
-          color: editor.isActive('italic') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('italic')}
       >
         Italic
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
         disabled={!editor.can().chain().focus().toggleStrike().run()}
-        style={{ 
-          backgroundColor: editor.isActive('strike') ? '#007acc' : 'white',
-          color: editor.isActive('strike') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('strike')}
       >
         Strike
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleCode().run()}
         disabled={!editor.can().chain().focus().toggleCode().run()}
-        style={{ 
-          backgroundColor: editor.isActive('code') ? '#007acc' : 'white',
-          color: editor.isActive('code') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('code')}
       >
         Code
-      </button>
+      </MenuButton>
 
       {/* Headings */}
-      <button
+      <MenuButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        style={{ 
-          backgroundColor: editor.isActive('heading', { level: 1 }) ? '#007acc' : 'white',
-          color: editor.isActive('heading', { level: 1 }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('heading', { level: 1 })}
       >
         H1
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        style={{ 
-          backgroundColor: editor.isActive('heading', { level: 2 }) ? '#007acc' : 'white',
-          color: editor.isActive('heading', { level: 2 }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('heading', { level: 2 })}
       >
         H2
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        style={{ 
-          backgroundColor: editor.isActive('heading', { level: 3 }) ? '#007acc' : 'white',
-          color: editor.isActive('heading', { level: 3 }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('heading', { level: 3 })}
       >
         H3
-      </button>
+      </MenuButton>
 
       {/* Lists */}
-      <button
+      <MenuButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        style={{ 
-          backgroundColor: editor.isActive('bulletList') ? '#007acc' : 'white',
-          color: editor.isActive('bulletList') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('bulletList')}
       >
         Bullet List
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        style={{ 
-          backgroundColor: editor.isActive('orderedList') ? '#007acc' : 'white',
-          color: editor.isActive('orderedList') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('orderedList')}
       >
         Ordered List
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleTaskList().run()}
-        style={{ 
-          backgroundColor: editor.isActive('taskList') ? '#007acc' : 'white',
-          color: editor.isActive('taskList') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('taskList')}
       >
         Task List
-      </button>
+      </MenuButton>
 
       {/* Text Alignment */}
-      <button
+      <MenuButton
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        style={{ 
-          backgroundColor: editor.isActive({ textAlign: 'left' }) ? '#007acc' : 'white',
-          color: editor.isActive({ textAlign: 'left' }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive({ textAlign: 'left' })}
       >
         Left
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        style={{ 
-          backgroundColor: editor.isActive({ textAlign: 'center' }) ? '#007acc' : 'white',
-          color: editor.isActive({ textAlign: 'center' }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive({ textAlign: 'center' })}
       >
         Center
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        style={{ 
-          backgroundColor: editor.isActive({ textAlign: 'right' }) ? '#007acc' : 'white',
-          color: editor.isActive({ textAlign: 'right' }) ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive({ textAlign: 'right' })}
       >
         Right
-      </button>
+      </MenuButton>
 
       {/* Table Operations */}
-      <button
-        onClick={addTable}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
-      >
+      <MenuButton onClick={addTable}>
         Add BlockNote Table
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().addColumnBefore().run()}
         disabled={!editor.can().addColumnBefore()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().addColumnBefore()}
       >
         Add Column Before
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().addColumnAfter().run()}
         disabled={!editor.can().addColumnAfter()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().addColumnAfter()}
       >
         Add Column After
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().deleteColumn().run()}
         disabled={!editor.can().deleteColumn()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().deleteColumn()}
       >
         Delete Column
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().addRowBefore().run()}
         disabled={!editor.can().addRowBefore()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().addRowBefore()}
       >
         Add Row Before
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().addRowAfter().run()}
         disabled={!editor.can().addRowAfter()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().addRowAfter()}
       >
         Add Row After
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().deleteRow().run()}
         disabled={!editor.can().deleteRow()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().deleteRow()}
       >
         Delete Row
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={deleteTable}
         disabled={!editor.isActive('table')}
-        style={{ 
-          backgroundColor: editor.isActive('table') ? '#ff4444' : '#cccccc',
-          color: editor.isActive('table') ? 'white' : '#666666',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: editor.isActive('table') ? 'pointer' : 'not-allowed'
-        }}
+        isDisabled={!editor.isActive('table')}
+        isActive={editor.isActive('table')}
+        isDanger={true}
       >
         Delete Table
-      </button>
+      </MenuButton>
 
       {/* Other Actions */}
-      <button
+      <MenuButton
         onClick={setLink}
-        style={{ 
-          backgroundColor: editor.isActive('link') ? '#007acc' : 'white',
-          color: editor.isActive('link') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('link')}
       >
         Link
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        style={{ 
-          backgroundColor: editor.isActive('blockquote') ? '#007acc' : 'white',
-          color: editor.isActive('blockquote') ? 'white' : 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isActive={editor.isActive('blockquote')}
       >
         Quote
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
       >
         Horizontal Rule
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().chain().focus().undo().run()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().chain().focus().undo().run()}
       >
         Undo
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().chain().focus().redo().run()}
-        style={{ 
-          backgroundColor: 'white',
-          color: 'black',
-          border: '1px solid #ccc',
-          padding: '5px 10px',
-          cursor: 'pointer'
-        }}
+        isDisabled={!editor.can().chain().focus().redo().run()}
       >
         Redo
-      </button>
-    </div>
+      </MenuButton>
+    </MenuBarContainer>
   )
 }
 
@@ -405,13 +490,8 @@ export default function Home() {
 
   const editor = useEditor({
     extensions: [
-      // Use StarterKit but exclude the table extension to avoid conflicts
-      StarterKit.configure({
-        table: false, // Disable StarterKit's table extension
-      }),
-      // Add our custom BlockNote table extensions
+      StarterKit,
       ...BlockNoteTableExtensions,
-      // Other extensions
       TextStyle,
       FontFamily,
       Color,
@@ -429,7 +509,7 @@ export default function Home() {
     ],
     content: `
       <h2>Welcome to BlockNote-inspired Tiptap Editor! 🎉</h2>
-      <p>This editor now includes BlockNote's advanced table implementation.</p>
+      <p>This editor now includes BlockNote's advanced table implementation with Emotion styled components.</p>
       <h3>BlockNote Table Features:</h3>
       <ul>
         <li>Block-based table architecture</li>
@@ -437,7 +517,18 @@ export default function Home() {
         <li>Column resizing capabilities</li>
         <li>Improved cell content handling</li>
         <li>Better DOM structure for styling</li>
+        <li>Minimum table width of 360px like BlockNote</li>
+        <li>Styled with Emotion for better maintainability</li>
       </ul>
+      <h3>Try the task list:</h3>
+      <ul data-type="taskList">
+        <li data-type="taskItem" data-checked="false">Create a table</li>
+        <li data-type="taskItem" data-checked="false">Test column resizing</li>
+        <li data-type="taskItem" data-checked="true">Implement styled components</li>
+      </ul>
+      <blockquote>
+        <p>"The best way to get started is to quit talking and begin doing." - Walt Disney</p>
+      </blockquote>
     `,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
@@ -445,206 +536,34 @@ export default function Home() {
 
   if (!isMounted) {
     return (
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        <h1>BlockNote-Inspired Tiptap Editor</h1>
-        <div style={{ 
-          border: '1px solid #ccc', 
-          borderRadius: '4px', 
-          minHeight: '500px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: '#f9f9f9'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              border: '3px solid #f3f3f3',
-              borderTop: '3px solid #007acc',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 10px'
-            }}></div>
-            <p>Loading editor...</p>
-          </div>
-        </div>
-        <style jsx>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
+      <>
+        <Global styles={globalStyles} />
+        <LoadingContainer>
+          <EditorTitle>BlockNote-Inspired Tiptap Editor</EditorTitle>
+          <LoadingWrapper>
+            <LoadingContent>
+              <Spinner />
+              <LoadingText>Loading editor...</LoadingText>
+            </LoadingContent>
+          </LoadingWrapper>
+        </LoadingContainer>
+      </>
     )
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <h1>BlockNote-Inspired Tiptap Editor</h1>
-      <div style={{ border: '1px solid #ccc', borderRadius: '4px' }}>
-        <MenuBar editor={editor} />
-        <EditorContent 
-          editor={editor} 
-          style={{ 
-            minHeight: '400px', 
-            padding: '15px',
-            outline: 'none'
-          }}
-        />
-      </div>
-      <style jsx>{`
-        :global(.ProseMirror) {
-          outline: none;
-          min-height: 400px;
-        }
-        
-        /* BlockNote-inspired table styles */
-        :global(.bn-block-content) {
-          width: 100%;
-          padding: 3px 0;
-          transition: font-size .2s;
-          display: flex;
-        }
-        
-      
-        :global(.tableWrapper) {
-          --bn-table-widget-size: 22px;
-          --bn-table-handle-size: 9px;
-          padding: var(--bn-table-handle-size) var(--bn-table-widget-size) var(--bn-table-widget-size) var(--bn-table-handle-size);
-          width: 100%;
-          position: relative;
-          overflow-y: hidden;
-        }
-        
-        
-        :global(.bn-table, .prosemirror-table) {
-          border-collapse: collapse;
-          table-layout: fixed;
-          width: 100%;
-          overflow: hidden;
-          word-break: break-word;
-          width: auto !important;
-          --default-cell-min-width: 120px;
-          min-width: 360px;
-        }
-        
-        :global(.bn-table td, .bn-table th, .prosemirror-table td, .prosemirror-table th) {
-          min-width: 120px !important;
-          border: 2px solid rgb(229, 231, 235) !important;
-          padding: 12px 16px !important;
-          vertical-align: top !important;
-          box-sizing: border-box !important;
-          position: relative !important;
-          background-color: white !important;
-          border-left: none !important;
-          border-top: none !important;
-        }
-        
-        :global(.bn-table td:first-child, .bn-table th:first-child, .prosemirror-table td:first-child, .prosemirror-table th:first-child) {
-          border-left: 1px solid #e5e7eb !important;
-        }
-        
-        :global(.bn-table tr:first-child td, .bn-table tr:first-child th, .prosemirror-table tr:first-child td, .prosemirror-table tr:first-child th) {
-          border-top: 1px solid #e5e7eb !important;
-        }
-        
-        :global(.bn-table th, .prosemirror-table th) {
-          font-weight: 600 !important;
-          text-align: left !important;
-          background-color: #f8fafc !important;
-          color: #374151 !important;
-          border-bottom: 2px solid #d1d5db !important;
-        }
-        
-        :global(.bn-table tr:hover td, .prosemirror-table tr:hover td) {
-          background-color: #f9fafb !important;
-        }
-        
-        :global(.bn-table .selectedCell:after, .prosemirror-table .selectedCell:after) {
-          z-index: 2;
-          position: absolute;
-          content: "";
-          left: 0; right: 0; top: 0; bottom: 0;
-          background: rgba(59, 130, 246, 0.15) !important;
-          pointer-events: none;
-          border: 2px solid #3b82f6 !important;
-        }
-        
-        /* Table paragraph styling */
-        :global(.bn-table p, .prosemirror-table p) {
-          margin: 0 !important;
-          padding: 0 !important;
-          line-height: 1.5 !important;
-        }
-        
-        :global(.table-widgets-container) {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          pointer-events: none;
-        }
-        
-        /* Column resize handles */
-        :global(.column-resize-handle) {
-          z-index: 20;
-          pointer-events: none;
-          background-color: #adf;
-          width: 4px;
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          right: -2px;
-          pointer-events: auto;
-          cursor: col-resize;
-          opacity: 0;
-          transition: opacity 0.2s;
-
-        }
-        
-        :global(.bn-table:hover .column-resize-handle, .prosemirror-table:hover .column-resize-handle) {
-          opacity: 1;
-        }
-        
-        /* Ensure table is visible in all cases */
-        :global(table) {
-          border-collapse: separate !important;
-          border-spacing: 0 !important;
-        }
-        
-        :global(table td, table th) {
-          border: 1px solid #e5e7eb !important;
-          padding: 8px 12px !important;
-          background-color: white !important;
-        }
-        
-        :global(table th) {
-          background-color: #f8fafc !important;
-          font-weight: 600 !important;
-        }
-        
-        /* Task list styles */
-        :global(.ProseMirror ul[data-type="taskList"]) {
-          list-style: none;
-          padding: 0;
-        }
-        :global(.ProseMirror ul[data-type="taskList"] p) {
-          margin: 0;
-        }
-        :global(.ProseMirror ul[data-type="taskList"] li) {
-          display: flex;
-        }
-        :global(.ProseMirror ul[data-type="taskList"] li > label) {
-          flex: 0 0 auto;
-          margin-right: 0.5rem;
-          user-select: none;
-        }
-        :global(.ProseMirror ul[data-type="taskList"] li > div) {
-          flex: 1 1 auto;
-        }
-      `}</style>
-    </div>
+    <>
+      <Global styles={globalStyles} />
+      <GlobalStyles/>
+      <EditorContainer>
+        <EditorTitle>BlockNote-Inspired Tiptap Editor</EditorTitle>
+        <EditorWrapper>
+          <MenuBar editor={editor} />
+          <EditorContentWrapper>
+            <EditorContent editor={editor} />
+          </EditorContentWrapper>
+        </EditorWrapper>
+      </EditorContainer>
+    </>
   );
 }
