@@ -5,55 +5,10 @@ import { Editor } from "@tiptap/core";
 import styled from "@emotion/styled";
 import { TableTrackerState } from "../extensions/tableTrackerExtension";
 import { useExtendButtonsPositioning } from "./useExtendButtonsPositioning";
-import { RiAddFill } from "react-icons/ri";
 import _, { debounce } from "lodash";
 import { NodeSelection } from "@tiptap/pm/state";
+import ExtendButton from "./ExtendButton";
 
-// Styled components
-const ExtendButtonContainer = styled.button<{ $isRow: boolean }>`
-  background-color: #efefef;
-  margin-top: ${(props) => (props.$isRow ? "4px" : "0px")};
-  margin-left: ${(props) => (!props.$isRow ? "4px" : "0px")};
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 12px;
-  width: 100%;
-  height: 100%;
-  border-radius: ${(props) => (props.$isRow ? "4px 4px 0 0" : "4px 0 0 4px")};
-  cursor: ${(props) => (props.$isRow ? "row-resize" : "col-resize")};
-`;
-
-// Simple extend button component
-interface ExtendButtonProps {
-  orientation: "addOrRemoveRows" | "addOrRemoveColumns";
-  onClick: () => void;
-}
-
-const ExtendButton: FC<ExtendButtonProps> = ({ orientation, onClick }) => {
-  const isRow = orientation === "addOrRemoveRows";
-
-  return (
-    <ExtendButtonContainer
-      $isRow={isRow}
-      onClick={onClick}
-      title={isRow ? "Add/Remove Rows" : "Add/Remove Columns"}
-    >
-      <RiAddFill
-        color="#cfcfcf"
-        stroke="#cfcfcf"
-        fill="#cfcfcf"
-        size={18}
-        data-test={"extendButton"}
-      />
-    </ExtendButtonContainer>
-  );
-};
 
 interface TableHandlesControllerProps {
   editor: Editor | null;
@@ -129,7 +84,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     )
     editor.view.dispatch(tr);
     editor.commands.addRowAfter();
-
   };
 
   const handleAddRemoveColumns = () => {
@@ -160,6 +114,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
             <ExtendButton
               orientation="addOrRemoveRows"
               onClick={handleAddRemoveRows}
+              editor={editor}
+              tableElement={state.tableElement}
             />
           </div>
         )}
@@ -174,6 +130,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
             <ExtendButton
               orientation="addOrRemoveColumns"
               onClick={handleAddRemoveColumns}
+              editor={editor}
+              tableElement={state.tableElement}
             />
           </div>
         )}
