@@ -97,7 +97,6 @@ export default function GlobalStyles() {
           left: 0;
           right: 0;
           bottom: 0;
-          pointer-events: none;
         }
 
         /* Column resize handles */

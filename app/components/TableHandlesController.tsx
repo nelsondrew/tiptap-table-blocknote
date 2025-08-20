@@ -39,32 +39,14 @@ interface ExtendButtonProps {
 const ExtendButton: FC<ExtendButtonProps> = ({ orientation, onClick }) => {
     const isRow = orientation === "addOrRemoveRows";
 
-    const handleClick = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log(`ExtendButton clicked: ${orientation}`); // Debug log
-        onClick();
-    };
-
     return (
         <ExtendButtonContainer
+            
             $isRow={isRow}
-            onClick={handleClick}
-            onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log(`ExtendButton mousedown: ${orientation}`); // Debug log
-            }}
+            onClick={onClick}
             title={isRow ? "Add/Remove Rows" : "Add/Remove Columns"}
         >
-            <RiAddFill 
-                color="#cfcfcf" 
-                stroke="#cfcfcf" 
-                fill="#cfcfcf" 
-                size={18} 
-                data-test={"extendButton"}
-                style={{ pointerEvents: 'none' }} // Prevent icon from intercepting clicks
-            />
+            <RiAddFill color="#cfcfcf" stroke="#cfcfcf" fill="#cfcfcf" size={18} data-test={"extendButton"} />
         </ExtendButtonContainer>
     );
 };
@@ -86,8 +68,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({ editor
         const currentState = (editor.extensionStorage as any)?.tableTracker?.view?.state;
 
         // Force a new object reference
-        console.log(currentState, "current state")
-        if (currentState?.widgetContainer) {
+        if (currentState) {
             setState({ ...currentState });
             tableStateRef.current = { ...currentState };
         }

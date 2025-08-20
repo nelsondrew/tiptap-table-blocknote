@@ -539,20 +539,12 @@ export default function Home() {
         <p>"The best way to get started is to quit talking and begin doing." - Walt Disney</p>
       </blockquote>
     `,
-    onUpdate: ({ editor }) => {
-      // Log the editor instance itself
-      const extensionStorage = editor?.extensionStorage?.tableTracker?.view?.state;
-      console.log(extensionStorage, "table state")
-    },
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
   }, [isMounted])
 
 
 
-  useEffect(() => {
-    console.log("current editor" , editor)
-  },[editor])
 
   if (!isMounted) {
     return (

@@ -6,7 +6,6 @@ import {
   StyleSchema,
 } from "@blocknote/core";
 import { FC, useCallback, useMemo, useState } from "react";
-
 import { FloatingPortal } from "@floating-ui/react";
 import { useBlockNoteEditor } from "../../hooks/useBlockNoteEditor.js";
 import { useUIPluginState } from "../../hooks/useUIPluginState.js";
