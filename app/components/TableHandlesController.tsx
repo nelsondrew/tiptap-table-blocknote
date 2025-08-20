@@ -74,7 +74,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     const currentState = (editor.extensionStorage as any)?.tableTracker?.view
       ?.state;
 
-    // Force a new object reference
     if (currentState) {
       setState({ ...currentState });
       tableStateRef.current = { ...currentState };
@@ -84,7 +83,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   useEffect(() => {
     if (!editor) return;
 
-    // Small delay to ensure editor is fully mounted
     const timeoutId = setTimeout(() => {
       if (!editor.view || !editor.view.dom) {
         console.warn("Editor view not yet available");
@@ -118,22 +116,20 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
 
   const { addOrRemoveRowsButton, addOrRemoveColumnsButton } =
     useExtendButtonsPositioning(
-      state?.show || false, // showAddOrRemoveColumnsButton
-      state?.show || false, // showAddOrRemoveRowsButton
+      state?.show || false, 
+      state?.show || false, 
       state?.referencePosTable || null,
     );
 
   const handleAddRemoveRows = () => {
     if(!editor) return;
-   
     const pos = editor.view.posAtDOM(state?.tableElement, 0);
     const tr = editor.state.tr.setSelection(
         NodeSelection.create(editor.state.doc, pos)
     )
     editor.view.dispatch(tr);
     editor.commands.addRowAfter();
-    // You can implement table row operations here
-    // For now, just logging
+
   };
 
   const handleAddRemoveColumns = () => {
@@ -144,13 +140,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     )
     editor.view.dispatch(tr);
     editor.commands.addColumnAfter();
-
-   
-    // You can implement table column operations here
-    // For now, just logging
   };
 
-  // Don't render if no table is being tracked
   if (!state?.show || !state.widgetContainer) {
     return null;
   }
