@@ -55,17 +55,17 @@ export default function GlobalStyles() {
           border-top: none !important;
         }
 
-        .bn-table td:first-child,
-        .bn-table th:first-child,
-        .prosemirror-table td:first-child,
-        .prosemirror-table th:first-child {
+        .bn-table td:first-of-type,
+        .bn-table th:first-of-type,
+        .prosemirror-table td:first-of-type,
+        .prosemirror-table th:first-of-type {
           border-left: 1px solid #e5e7eb !important;
         }
 
-        .bn-table tr:first-child td,
-        .bn-table tr:first-child th,
-        .prosemirror-table tr:first-child td,
-        .prosemirror-table tr:first-child th {
+        .bn-table tr:first-of-type td,
+        .bn-table tr:first-of-type th,
+        .prosemirror-table tr:first-of-type td,
+        .prosemirror-table tr:first-of-type th {
           border-top: 1px solid #e5e7eb !important;
         }
 

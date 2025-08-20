@@ -14,9 +14,12 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import { useCallback, useState, useEffect } from 'react'
 import BlockNoteTableExtensions from '../extensions/BlockNoteTable'
+import TableHandlesExtension from "../app/extensions/TableHandlesPlugin"
 import styled from '@emotion/styled'
 import { css, Global } from '@emotion/react'
 import GlobalStyles from "./GlobalStyles";
+import TableTrackerExtension from "./extensions/tableTrackerExtension";
+import TableHandlesController from "./components/TableHandlesController";
 
 // Styled components
 const EditorContainer = styled.div`
@@ -488,10 +491,14 @@ export default function Home() {
     setIsMounted(true)
   }, [])
 
+
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       ...BlockNoteTableExtensions,
+      TableTrackerExtension,
+      // TableHandlesExtension, // Add the table handles extension
       TextStyle,
       FontFamily,
       Color,
@@ -509,7 +516,7 @@ export default function Home() {
     ],
     content: `
       <h2>Welcome to BlockNote-inspired Tiptap Editor! 🎉</h2>
-      <p>This editor now includes BlockNote's advanced table implementation with Emotion styled components.</p>
+      <p>This editor now includes BlockNote's advanced table implementation with Table Handles support.</p>
       <h3>BlockNote Table Features:</h3>
       <ul>
         <li>Block-based table architecture</li>
@@ -518,21 +525,34 @@ export default function Home() {
         <li>Improved cell content handling</li>
         <li>Better DOM structure for styling</li>
         <li>Minimum table width of 360px like BlockNote</li>
-        <li>Styled with Emotion for better maintainability</li>
+        <li>Table handles for drag and drop</li>
+        <li>Context menus for table operations</li>
       </ul>
       <h3>Try the task list:</h3>
       <ul data-type="taskList">
         <li data-type="taskItem" data-checked="false">Create a table</li>
-        <li data-type="taskItem" data-checked="false">Test column resizing</li>
-        <li data-type="taskItem" data-checked="true">Implement styled components</li>
+        <li data-type="taskItem" data-checked="false">Test table handles</li>
+        <li data-type="taskItem" data-checked="false">Test drag and drop</li>
+        <li data-type="taskItem" data-checked="false">Implement table handles extension</li>
       </ul>
       <blockquote>
         <p>"The best way to get started is to quit talking and begin doing." - Walt Disney</p>
       </blockquote>
     `,
+    onUpdate: ({ editor }) => {
+      // Log the editor instance itself
+      const extensionStorage = editor?.extensionStorage?.tableTracker?.view?.state;
+      console.log(extensionStorage, "table state")
+    },
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
   }, [isMounted])
+
+
+
+  useEffect(() => {
+    console.log("current editor" , editor)
+  },[editor])
 
   if (!isMounted) {
     return (
@@ -551,10 +571,12 @@ export default function Home() {
     )
   }
 
+
   return (
     <>
       <Global styles={globalStyles} />
       <GlobalStyles/>
+      <TableHandlesController editor={editor}/>
       <EditorContainer>
         <EditorTitle>BlockNote-Inspired Tiptap Editor</EditorTitle>
         <EditorWrapper>
