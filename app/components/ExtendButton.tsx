@@ -6,7 +6,6 @@ import { Editor } from "@tiptap/core";
 const EMPTY_CELL_HEIGHT = 49;
 const EMPTY_CELL_WIDTH = 120;
 
-// Rounds a number up or down, depending on whether we're close to the next integer
 const marginRound = (num: number, margin = 0.3) => {
   const lowerBound = Math.floor(num) + margin;
   const upperBound = Math.ceil(num) - margin;
@@ -20,7 +19,6 @@ const marginRound = (num: number, margin = 0.3) => {
   }
 };
 
-// Styled components
 const ExtendButtonContainer = styled.button<{
   $isRow: boolean;
   $isDragging: boolean;
@@ -62,7 +60,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
 }) => {
   const isRow = orientation === "addOrRemoveRows";
   const startPosRef = useRef<number | null>(null);
-  const appliedChangesRef = useRef<number>(0); // Track how many changes we've applied
+  const appliedChangesRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
 
   // Get current table dimensions
@@ -96,7 +94,6 @@ const ExtendButton: FC<ExtendButtonProps> = ({
 
       return true;
     } catch (error) {
-      console.warn("Error setting table selection:", error);
       return false;
     }
   };
@@ -105,36 +102,23 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // Store starting position based on orientation
     startPosRef.current = isRow ? e.clientY : e.clientX;
-    appliedChangesRef.current = 0; // Reset applied changes counter
+    appliedChangesRef.current = 0;
     isDraggingRef.current = true;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (startPosRef.current === null) return;
 
-      // Calculate diff based on orientation
       const diff = isRow
-        ? e.clientY - startPosRef.current // For rows, track vertical movement
-        : e.clientX - startPosRef.current; // For columns, track horizontal movement
+        ? e.clientY - startPosRef.current
+        : e.clientX - startPosRef.current;
 
-      // Calculate number of cells to add/remove based on drag distance
       const cellSize = isRow ? EMPTY_CELL_HEIGHT : EMPTY_CELL_WIDTH;
       const targetCellChange = marginRound(diff / cellSize, 0.3);
 
-      // Calculate how many operations we need to perform
       const operationsNeeded = targetCellChange - appliedChangesRef.current;
 
-      console.log({
-        type: isRow ? "Row" : "Column",
-        dragDiff: diff + "px",
-        targetCellChange,
-        appliedChanges: appliedChangesRef.current,
-        operationsNeeded,
-      });
-
       if (operationsNeeded !== 0) {
-        // Ensure we have proper table selection
         if (!ensureTableSelection()) {
           console.warn("Could not establish table selection");
           return;
@@ -142,10 +126,8 @@ const ExtendButton: FC<ExtendButtonProps> = ({
 
         try {
           if (operationsNeeded > 0) {
-            // Need to add more rows/columns
             for (let i = 0; i < operationsNeeded; i++) {
               if (isRow) {
-                // For rows, select the last cell before adding
                 const { rows } = getCurrentTableDimensions();
                 const lastCell = tableElement?.querySelector(
                   `tbody tr:nth-child(${rows}) td:first-child, tbody tr:nth-child(${rows}) th:first-child`,
@@ -163,32 +145,23 @@ const ExtendButton: FC<ExtendButtonProps> = ({
                   }
                 }
 
-                const result = editor.commands.addRowAfter();
-                console.log("Added row, result:", result);
+                editor.commands.addRowAfter();
               } else {
-                const result = editor.commands.addColumnAfter();
-                console.log("Added column, result:", result);
+                editor.commands.addColumnAfter();
               }
             }
             appliedChangesRef.current += operationsNeeded;
           } else {
-            // Need to remove rows/columns
             const toRemove = Math.abs(operationsNeeded);
             for (let i = 0; i < toRemove; i++) {
               if (isRow) {
-                const result = editor.commands.deleteRow();
-                console.log("Removed row, result:", result);
+                editor.commands.deleteRow();
               } else {
-                const result = editor.commands.deleteColumn();
-                console.log("Removed column, result:", result);
+                editor.commands.deleteColumn();
               }
             }
-            appliedChangesRef.current += operationsNeeded; // operationsNeeded is negative
+            appliedChangesRef.current += operationsNeeded;
           }
-
-          console.log(
-            `Applied ${Math.abs(operationsNeeded)} ${operationsNeeded > 0 ? "additions" : "removals"}. Total applied: ${appliedChangesRef.current}`,
-          );
         } catch (error) {
           console.warn("Error updating table:", error);
         }
@@ -196,19 +169,14 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     };
 
     const handleMouseUp = () => {
-      console.log(
-        `${isRow ? "Row" : "Column"} drag ended. Total changes applied: ${appliedChangesRef.current}`,
-      );
       startPosRef.current = null;
       appliedChangesRef.current = 0;
       isDraggingRef.current = false;
 
-      // Cleanup listeners
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
 
-    // Attach global listeners
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
@@ -217,7 +185,6 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // Only trigger onClick if there was no drag
     if (!isDraggingRef.current && startPosRef.current === null) {
       onClick();
     }
