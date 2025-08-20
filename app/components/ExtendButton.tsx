@@ -23,7 +23,7 @@ const ExtendButtonContainer = styled.button<{
   $isRow: boolean;
   $isDragging: boolean;
 }>`
-  background-color: ${(props) => (props.$isDragging ? "#3b82f6" : "#efefef")};
+  background-color: ${(props) => (props.$isDragging ? "#c0c0c0" : "#efefef")};
   margin-top: ${(props) => (props.$isRow ? "4px" : "0px")};
   margin-left: ${(props) => (!props.$isRow ? "4px" : "0px")};
   color: white;
@@ -41,13 +41,13 @@ const ExtendButtonContainer = styled.button<{
   cursor: ${(props) => (props.$isRow ? "row-resize" : "col-resize")};
 
   &:hover {
-    background-color: ${(props) => (props.$isDragging ? "#2563eb" : "#d1d5db")};
+    background-color: ${(props) => (props.$isDragging ? "#c0c0c0" : "#d1d5db")};
   }
 `;
 
 interface ExtendButtonProps {
   orientation: "addOrRemoveRows" | "addOrRemoveColumns";
-  onClick: () => void;
+  onClick: (remove : boolean) => void;
   editor: Editor;
   tableElement: HTMLElement | null;
 }
@@ -62,19 +62,6 @@ const ExtendButton: FC<ExtendButtonProps> = ({
   const startPosRef = useRef<number | null>(null);
   const appliedChangesRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
-
-  // Get current table dimensions
-  const getCurrentTableDimensions = () => {
-    if (!tableElement) return { rows: 0, cols: 0 };
-
-    const tbody = tableElement.querySelector("tbody");
-    if (!tbody) return { rows: 0, cols: 0 };
-
-    const rows = tbody.children.length;
-    const cols = rows > 0 ? tbody.children[0].children.length : 0;
-
-    return { rows, cols };
-  };
 
   // Ensure proper table selection
   const ensureTableSelection = () => {
@@ -128,26 +115,9 @@ const ExtendButton: FC<ExtendButtonProps> = ({
           if (operationsNeeded > 0) {
             for (let i = 0; i < operationsNeeded; i++) {
               if (isRow) {
-                const { rows } = getCurrentTableDimensions();
-                const lastCell = tableElement?.querySelector(
-                  `tbody tr:nth-child(${rows}) td:first-child, tbody tr:nth-child(${rows}) th:first-child`,
-                );
-                console.log(lastCell, "last cell");
-                if (lastCell) {
-                  const pos = editor.view.posAtDOM(lastCell, 0);
-                  if (pos !== -1) {
-                    const tr = editor.state.tr.setSelection(
-                      editor.state.selection.constructor.near(
-                        editor.state.doc.resolve(pos),
-                      ),
-                    );
-                    editor.view.dispatch(tr);
-                  }
-                }
-
-                editor.commands.addRowAfter();
+                onClick(false);
               } else {
-                editor.commands.addColumnAfter();
+                onClick(false);
               }
             }
             appliedChangesRef.current += operationsNeeded;
@@ -155,9 +125,9 @@ const ExtendButton: FC<ExtendButtonProps> = ({
             const toRemove = Math.abs(operationsNeeded);
             for (let i = 0; i < toRemove; i++) {
               if (isRow) {
-                editor.commands.deleteRow();
+                onClick(true)
               } else {
-                editor.commands.deleteColumn();
+                onClick(true)
               }
             }
             appliedChangesRef.current += operationsNeeded;
@@ -186,7 +156,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     e.stopPropagation();
 
     if (!isDraggingRef.current && startPosRef.current === null) {
-      onClick();
+      onClick(false);
     }
   };
 
