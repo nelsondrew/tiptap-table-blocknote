@@ -7,6 +7,7 @@ import { TableTrackerState } from "../extensions/tableTrackerExtension";
 import { useExtendButtonsPositioning } from "./useExtendButtonsPositioning";
 import { RiAddFill } from "react-icons/ri";
 import _, { debounce } from "lodash";
+import { NodeSelection } from "@tiptap/pm/state";
 
 // Styled components
 const ExtendButtonContainer = styled.button<{ $isRow: boolean }>`
@@ -94,11 +95,11 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
 
       const handleMouseUp = debounce(() => {
         updateLocalState(editorRef.current);
-      }, 10);
+      }, 0);
 
       const handleMouseMove = debounce(() => {
         updateLocalState(editorRef.current);
-      }, 10);
+      }, 0);
 
       el.addEventListener("mouseup", handleMouseUp);
       el.addEventListener("mousemove", handleMouseMove);
@@ -115,7 +116,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     };
   }, [editor]);
 
-  // Use the proper positioning hook from BlockNote
   const { addOrRemoveRowsButton, addOrRemoveColumnsButton } =
     useExtendButtonsPositioning(
       state?.show || false, // showAddOrRemoveColumnsButton
@@ -123,15 +123,29 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       state?.referencePosTable || null,
     );
 
-  // Handle button clicks
   const handleAddRemoveRows = () => {
-    console.log("Add/Remove rows clicked");
+    if(!editor) return;
+   
+    const pos = editor.view.posAtDOM(state?.tableElement, 0);
+    const tr = editor.state.tr.setSelection(
+        NodeSelection.create(editor.state.doc, pos)
+    )
+    editor.view.dispatch(tr);
+    editor.commands.addRowAfter();
     // You can implement table row operations here
     // For now, just logging
   };
 
   const handleAddRemoveColumns = () => {
-    console.log("Add/Remove columns clicked");
+    if(!editor) return;
+    const pos = editor.view.posAtDOM(state?.tableElement, 0);
+    const tr = editor.state.tr.setSelection(
+        NodeSelection.create(editor.state.doc, pos)
+    )
+    editor.view.dispatch(tr);
+    editor.commands.addColumnAfter();
+
+   
     // You can implement table column operations here
     // For now, just logging
   };
