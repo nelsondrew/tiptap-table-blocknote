@@ -1,5 +1,5 @@
 "use client";
-import React, { FC, ReactNode, useState, useRef } from "react";
+import React, { FC, ReactNode, useState, useRef, Dispatch, SetStateAction } from "react";
 import styled from "@emotion/styled";
 import { MdDragIndicator } from "react-icons/md";
 import { Editor } from "@tiptap/core";
@@ -71,6 +71,7 @@ export interface TableHandleProps {
   dragEnd?: () => void;
   menuContainer?: HTMLElement | null;
   children?: ReactNode;
+  setIsMenuOpen?:  Dispatch<SetStateAction<boolean>>;
 }
 
 export const TableHandle: FC<TableHandleProps> = ({
@@ -86,6 +87,7 @@ export const TableHandle: FC<TableHandleProps> = ({
   dragEnd,
   menuContainer,
   children,
+  setIsMenuOpen
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -104,10 +106,8 @@ export const TableHandle: FC<TableHandleProps> = ({
   });
 
   const handleClick = () => {
-    console.log(`Hello world - ${orientation} handle ${index} clicked`);
-    console.log('Menu container:', menuContainer);
-    console.log('Current showMenu state:', showMenu);
     setShowMenu(!showMenu);
+    setIsMenuOpen?.(!showMenu);
     if (!showMenu) {
       freezeHandles?.();
       hideOtherSide?.();
@@ -121,6 +121,7 @@ export const TableHandle: FC<TableHandleProps> = ({
     setShowMenu(false);
     unfreezeHandles?.();
     showOtherSide?.();
+    setIsMenuOpen?.(false);
   };
 
   const handleMouseEnter = () => {

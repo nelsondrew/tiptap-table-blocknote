@@ -23,10 +23,24 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   const [menuContainerRef, setMenuContainerRef] = useState<HTMLDivElement | null>(null);
   const [hideRow, setHideRow] = useState<boolean>(false);
   const [hideCol, setHideCol] = useState<boolean>(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMenuOpenRef = useRef(false);
 
   useEffect(() => {
     editorRef.current = editor;
   }, [editor]);
+
+  // Keep the ref in sync with the state
+  useEffect(() => {
+    isMenuOpenRef.current = isMenuOpen;
+  }, [isMenuOpen]);
+
+  // Wrapper function to update both state and ref
+  const updateIsMenuOpen = (value: boolean | ((prevState: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(isMenuOpen) : value;
+    setIsMenuOpen(newValue);
+    isMenuOpenRef.current = newValue;
+  };
 
   // Subscribe to table tracker updates using the proper API
   useEffect(() => {
@@ -35,14 +49,16 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     const timeoutId = setTimeout(() => {
       const tableTracker = (editor as any).tableTracker;
       if (!tableTracker) {
-        console.warn("TableTracker API not available on editor");
         return;
       }
 
       // Subscribe to state updates
       const unsubscribe = tableTracker.onUpdate((newState: TableTrackerState) => {
-        setState({ ...newState });
-        tableStateRef.current = { ...newState };
+        // Don't update state if menu is open to prevent handles from disappearing
+        if (!isMenuOpenRef.current) {
+          setState({ ...newState });
+          tableStateRef.current = { ...newState };
+        }
       });
 
       // Set initial state
@@ -136,20 +152,17 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   // Helper to select a cell and execute table command - improved error handling
   const selectCellAndExecute = (selector: string, command: () => void) => {
     if (!editor || !state?.tableElement) {
-      console.warn('Editor or table element not available');
       return;
     }
 
     const cell = state.tableElement.querySelector(selector);
     if (!cell) {
-      console.warn(`Cell not found with selector: ${selector}`);
       return;
     }
 
     try {
       const cellDesc = (cell as any).pmViewDesc;
       if (!cellDesc || !['tableCell', 'tableHeader'].includes(cellDesc.node.type.name)) {
-        console.warn('Invalid cell selection - no pmViewDesc or wrong node type');
         return;
       }
 
@@ -161,15 +174,13 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       editor.view.dispatch(editor.state.tr.setSelection(cellSelection));
       command();
     } catch (error) {
-      console.error('Error executing table command:', error);
+      // Silent error handling
     }
   };
 
   const handleRemoveLastRow = () => {
     // BlockNote behavior: prevent deletion if row has content
     if (lastRowHasContent()) {
-      console.log('Cannot delete row: Last row contains content');
-      // You could show a toast notification here
       return;
     }
     
@@ -188,8 +199,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   const handleRemoveLastColumn = () => {
     // BlockNote behavior: prevent deletion if column has content
     if (lastColumnHasContent()) {
-      console.log('Cannot delete column: Last column contains content');
-      // You could show a toast notification here
       return;
     }
     
@@ -243,19 +252,15 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     ) : null;
   };
 
-  console.log({
-    hideRow,
-    menuContainerRef,
-    rowHandle,
-    rowIndex: state.rowIndex
-  })
 
   return (
     <>
       {/* Menu container for portals - following BlockNote pattern */}
       <div ref={setMenuContainerRef}></div>
+
       
       <FloatingPortal root={portalRoot}>
+      
         {/* Row Handle - appears on left when hovering over cells */}
         {!hideRow &&
           menuContainerRef &&
@@ -272,6 +277,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 freezeHandles={() => tableTracker?.freezeHandles()}
                 unfreezeHandles={() => tableTracker?.unfreezeHandles()}
                 menuContainer={menuContainerRef}
+                setIsMenuOpen={updateIsMenuOpen}
               />
             </div>
           )}
@@ -292,6 +298,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 freezeHandles={() => tableTracker?.freezeHandles()}
                 unfreezeHandles={() => tableTracker?.unfreezeHandles()}
                 menuContainer={menuContainerRef}
+                setIsMenuOpen={updateIsMenuOpen}
               />
             </div>
           )}

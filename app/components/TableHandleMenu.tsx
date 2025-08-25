@@ -160,16 +160,6 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
           </MenuItem>
         </>
       )}
-      
-      <MenuSeparator />
-      
-      <MenuItem onClick={() => console.log(`Convert ${orientation} to header`)}>
-        📋 Convert to header
-      </MenuItem>
-      
-      <MenuItem onClick={() => console.log(`Change ${orientation} color`)}>
-        🎨 Change color
-      </MenuItem>
     </MenuDropdown>
   );
 };
