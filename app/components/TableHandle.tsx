@@ -26,10 +26,16 @@ const TableHandleButton = styled.button`
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
-  &:active {
+  &:active,
+  &:focus:active {
     cursor: grabbing;
-    background-color: #e5e7eb;
+    background-color: #6b7280; /* Dark grey on press/grab */
+    border-color: #4b5563;
     transform: scale(0.95);
+    
+    svg {
+      color: #ffffff; /* White icon when pressed */
+    }
   }
   
   &.dragging {
@@ -43,7 +49,7 @@ const TableHandleButton = styled.button`
 const DragIcon = styled(MdDragIndicator)`
   width: 18px;
   height: 18px;
-  color: #374151;
+  color: #cfcfcf; /* Light grey fill for the six dots by default */
   
   .dragging & {
     color: white;
