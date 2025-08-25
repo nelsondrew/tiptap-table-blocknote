@@ -149,7 +149,6 @@ class TableTrackerView {
     let rowIndex: number | undefined;
     let showAddOrRemoveRowsButton = false;
     let showAddOrRemoveColumnsButton = false;
-    debugger;
 
     if (target.type === "cell") {
       colIndex = getChildIndex(target.domNode);
