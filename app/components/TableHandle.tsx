@@ -1,9 +1,11 @@
 "use client";
-import React, { FC, ReactNode, useState } from "react";
+import React, { FC, ReactNode, useState, useRef } from "react";
 import styled from "@emotion/styled";
 import { MdDragIndicator } from "react-icons/md";
 import { Editor } from "@tiptap/core";
 import { createPortal } from "react-dom";
+import { useFloating, autoUpdate, offset, flip, shift } from "@floating-ui/react";
+import { TableHandleMenu } from "./TableHandleMenu";
 
 const TableHandleButton = styled.button`
   position: fixed !important;
@@ -60,6 +62,7 @@ export interface TableHandleProps {
   editor: Editor;
   orientation: "row" | "column";
   index: number;
+  tableElement?: HTMLElement | null;
   showOtherSide?: () => void;
   hideOtherSide?: () => void;
   freezeHandles?: () => void;
@@ -74,6 +77,7 @@ export const TableHandle: FC<TableHandleProps> = ({
   editor,
   orientation,
   index,
+  tableElement,
   showOtherSide,
   hideOtherSide,
   freezeHandles,
@@ -84,9 +88,39 @@ export const TableHandle: FC<TableHandleProps> = ({
   children,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const { refs, floatingStyles } = useFloating({
+    open: showMenu,
+    onOpenChange: setShowMenu,
+    middleware: [
+      offset(8),
+      flip(),
+      shift(),
+    ],
+    whileElementsMounted: autoUpdate,
+    placement: orientation === "row" ? "right-start" : "bottom-start",
+  });
 
   const handleClick = () => {
     console.log(`Hello world - ${orientation} handle ${index} clicked`);
+    console.log('Menu container:', menuContainer);
+    console.log('Current showMenu state:', showMenu);
+    setShowMenu(!showMenu);
+    if (!showMenu) {
+      freezeHandles?.();
+      hideOtherSide?.();
+    } else {
+      unfreezeHandles?.();
+      showOtherSide?.();
+    }
+  };
+
+  const handleMenuClose = () => {
+    setShowMenu(false);
+    unfreezeHandles?.();
+    showOtherSide?.();
   };
 
   const handleMouseEnter = () => {
@@ -122,6 +156,7 @@ export const TableHandle: FC<TableHandleProps> = ({
   return (
     <>
       <TableHandleButton
+        ref={refs.setReference}
         className={isDragging ? "dragging" : ""}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
@@ -142,13 +177,42 @@ export const TableHandle: FC<TableHandleProps> = ({
         {children || <DragIcon />}
       </TableHandleButton>
       
-      {/* Use createPortal for menu to prevent clipping - following BlockNote pattern */}
-      {menuContainer && createPortal(
-        <div>
-          {/* This would be where the table handle menu goes */}
-          {/* For now, just a placeholder that doesn't render anything visible */}
-        </div>,
-        menuContainer,
+      {/* Use floating UI for proper menu positioning */}
+      {showMenu && (
+        menuContainer ? createPortal(
+          <div
+            ref={refs.setFloating}
+            style={{
+              ...floatingStyles,
+              zIndex: 999999,
+            }}
+          >
+            <TableHandleMenu
+              editor={editor}
+              orientation={orientation}
+              index={index}
+              tableElement={tableElement || null}
+              onClose={handleMenuClose}
+            />
+          </div>,
+          menuContainer,
+        ) : (
+          <div
+            ref={refs.setFloating}
+            style={{
+              ...floatingStyles,
+              zIndex: 999999,
+            }}
+          >
+            <TableHandleMenu
+              editor={editor}
+              orientation={orientation}
+              index={index}
+              tableElement={tableElement || null}
+              onClose={handleMenuClose}
+            />
+          </div>
+        )
       )}
     </>
   );

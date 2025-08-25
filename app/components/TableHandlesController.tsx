@@ -266,6 +266,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 editor={editor}
                 orientation="row"
                 index={state.rowIndex}
+                tableElement={state.tableElement}
                 showOtherSide={() => setHideCol(false)}
                 hideOtherSide={() => setHideCol(true)}
                 freezeHandles={() => tableTracker?.freezeHandles()}
@@ -285,6 +286,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 editor={editor}
                 orientation="column"
                 index={state.colIndex}
+                tableElement={state.tableElement}
                 showOtherSide={() => setHideRow(false)}
                 hideOtherSide={() => setHideRow(true)}
                 freezeHandles={() => tableTracker?.freezeHandles()}
