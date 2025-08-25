@@ -220,6 +220,22 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   const handleAddRemoveColumns = (remove: boolean) =>
     remove ? handleRemoveLastColumn() : handleAddLastColumn();
 
+  // Use the global table tracker drag handlers
+  const handleRowDragStart = (e: React.DragEvent) => {
+    console.log('🔥 Controller received ROW drag start - delegating to tracker');
+    tableTracker?.rowDragStart({ clientY: e.clientY });
+  };
+
+  const handleColDragStart = (e: React.DragEvent) => {
+    console.log('🔥 Controller received COLUMN drag start - delegating to tracker');  
+    tableTracker?.colDragStart({ clientX: e.clientX });
+  };
+
+  const handleDragEnd = () => {
+    console.log('🔥 Controller received drag end - delegating to tracker');
+    tableTracker?.dragEnd();
+  };
+
   // Don't render if basic requirements not met
   if (!state?.show || !editor) {
     return null;
@@ -276,6 +292,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 hideOtherSide={() => setHideCol(true)}
                 freezeHandles={() => tableTracker?.freezeHandles()}
                 unfreezeHandles={() => tableTracker?.unfreezeHandles()}
+                dragStart={handleRowDragStart}
+                dragEnd={handleDragEnd}
                 menuContainer={menuContainerRef}
                 setIsMenuOpen={updateIsMenuOpen}
               />
@@ -297,6 +315,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
                 hideOtherSide={() => setHideRow(true)}
                 freezeHandles={() => tableTracker?.freezeHandles()}
                 unfreezeHandles={() => tableTracker?.unfreezeHandles()}
+                dragStart={handleColDragStart}
+                dragEnd={handleDragEnd}
                 menuContainer={menuContainerRef}
                 setIsMenuOpen={updateIsMenuOpen}
               />

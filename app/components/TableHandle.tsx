@@ -91,7 +91,6 @@ export const TableHandle: FC<TableHandleProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const { refs, floatingStyles } = useFloating({
     open: showMenu,
@@ -145,14 +144,23 @@ export const TableHandle: FC<TableHandleProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    console.log('🚀 DRAG STARTED!', orientation, index);
     setIsDragging(true);
+    
+    // Make the drag operation visible
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `${orientation}-${index}`);
+    
     dragStart?.(e);
   };
 
   const handleDragEnd = () => {
+    console.log('🏁 DRAG ENDED!', orientation, index);
     setIsDragging(false);
     dragEnd?.();
   };
+
+  // Remove local drag over and drop handlers - these are handled globally now
 
   return (
     <>
@@ -167,7 +175,7 @@ export const TableHandle: FC<TableHandleProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         draggable={true}
-        title={`${orientation} handle ${index}`}
+        title={`${orientation} handle ${index} - DRAG ME!`}
         data-test={`tableHandle-${orientation}`}
         style={
           orientation === "column"

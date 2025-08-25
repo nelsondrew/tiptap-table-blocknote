@@ -14,6 +14,11 @@ export type TableTrackerState = {
   rowIndex: number | undefined;
   mouseState: "up" | "down" | "selecting";
   menuFrozen: boolean;
+  draggingState?: {
+    draggedCellOrientation: "row" | "column";
+    originalIndex: number;
+    mousePos: number;
+  };
 };
 
 export type TableTrackerAPI = {
@@ -21,6 +26,9 @@ export type TableTrackerAPI = {
   onUpdate: (callback: (state: TableTrackerState) => void) => () => void;
   freezeHandles: () => void;
   unfreezeHandles: () => void;
+  rowDragStart: (event: { clientY: number }) => void;
+  colDragStart: (event: { clientX: number }) => void;
+  dragEnd: () => void;
 };
 
 // Helper function to get child index
@@ -87,6 +95,10 @@ class TableTrackerView {
     this.view.dom.addEventListener("mousedown", this.mouseDownHandler);
     this.view.dom.addEventListener("mouseleave", this.mouseLeaveHandler);
     window.addEventListener("mouseup", this.mouseUpHandler);
+    
+    // Add drag and drop handlers at the root level (BlockNote style)
+    this.view.root.addEventListener("dragover", this.dragOverHandler as EventListener);
+    this.view.root.addEventListener("drop", this.dropHandler as EventListener);
   }
 
   private mouseDownHandler = () => {
@@ -244,6 +256,128 @@ class TableTrackerView {
     this.hideTable();
   };
 
+  private dragOverHandler = (event: DragEvent) => {
+    if (this.state.draggingState === undefined) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = "move";
+
+    console.log("🎯 DRAG OVER - Global handler");
+
+    // Get the bounded mouse coordinates within the table
+    const tableRect = this.state.referencePosTable;
+    if (!tableRect) return;
+
+    const boundedMouseCoords = {
+      left: Math.min(
+        Math.max(event.clientX, tableRect.left + 1),
+        tableRect.right - 1,
+      ),
+      top: Math.min(
+        Math.max(event.clientY, tableRect.top + 1),
+        tableRect.bottom - 1,
+      ),
+    };
+
+    // Find the table cell under the mouse
+    const elements = this.view.root.elementsFromPoint 
+      ? this.view.root.elementsFromPoint(boundedMouseCoords.left, boundedMouseCoords.top)
+      : document.elementsFromPoint(boundedMouseCoords.left, boundedMouseCoords.top);
+    
+    const tableCellElements = elements.filter(
+      (element) => element.tagName === "TD" || element.tagName === "TH",
+    );
+    
+    if (tableCellElements.length === 0) {
+      return;
+    }
+    const tableCellElement = tableCellElements[0];
+
+    const rowIndex = getChildIndex(tableCellElement.parentElement!);
+    const colIndex = getChildIndex(tableCellElement);
+
+    // Update state if hovering over different cell
+    if (this.state.rowIndex !== rowIndex || this.state.colIndex !== colIndex) {
+      this.state.rowIndex = rowIndex;
+      this.state.colIndex = colIndex;
+      this.state.referencePosCell = tableCellElement.getBoundingClientRect();
+
+      console.log(`🎯 Dragging over ${this.state.draggingState.draggedCellOrientation} ${colIndex}, ${rowIndex}`);
+      this.emitUpdate();
+    }
+
+    // Update mouse position
+    const mousePos =
+      this.state.draggingState.draggedCellOrientation === "row"
+        ? boundedMouseCoords.top
+        : boundedMouseCoords.left;
+        
+    if (this.state.draggingState.mousePos !== mousePos) {
+      this.state.draggingState.mousePos = mousePos;
+      this.emitUpdate();
+    }
+  };
+
+  private dropHandler = (event: DragEvent) => {
+    if (this.state.draggingState === undefined) {
+      return false;
+    }
+
+    event.preventDefault();
+    
+    const { draggingState, colIndex, rowIndex } = this.state;
+    
+    console.log("📍 DROP!", {
+      orientation: draggingState.draggedCellOrientation,
+      from: draggingState.originalIndex,
+      to: draggingState.draggedCellOrientation === "row" ? rowIndex : colIndex
+    });
+
+    // Here we would implement the actual table manipulation
+    // For now, just log the drop
+
+    return true;
+  };
+
+  public rowDragStart = (event: { clientY: number }) => {
+    if (this.state.rowIndex === undefined) {
+      throw new Error("Attempted to drag table row, but no table block was hovered prior.");
+    }
+
+    console.log("🚀 ROW DRAG START - Global handler");
+    
+    this.state.draggingState = {
+      draggedCellOrientation: "row",
+      originalIndex: this.state.rowIndex,
+      mousePos: event.clientY,
+    };
+    this.emitUpdate();
+  };
+
+  public colDragStart = (event: { clientX: number }) => {
+    if (this.state.colIndex === undefined) {
+      throw new Error("Attempted to drag table column, but no table block was hovered prior.");
+    }
+
+    console.log("🚀 COLUMN DRAG START - Global handler");
+    
+    this.state.draggingState = {
+      draggedCellOrientation: "column",
+      originalIndex: this.state.colIndex,
+      mousePos: event.clientX,
+    };
+    this.emitUpdate();
+  };
+
+  public dragEnd = () => {
+    console.log("🏁 DRAG END - Global handler");
+    
+    this.state.draggingState = undefined;
+    this.emitUpdate();
+  };
+
   private findTableElement(domNode: Element): HTMLElement | null {
     // Try multiple selectors for different table implementations
     const selectors = [
@@ -321,6 +455,8 @@ class TableTrackerView {
     this.view.dom.removeEventListener("mousedown", this.mouseDownHandler);
     this.view.dom.removeEventListener("mouseleave", this.mouseLeaveHandler);
     window.removeEventListener("mouseup", this.mouseUpHandler);
+    this.view.root.removeEventListener("dragover", this.dragOverHandler as EventListener);
+    this.view.root.removeEventListener("drop", this.dropHandler as EventListener);
     this.updateCallbacks.clear();
   }
 }
@@ -372,6 +508,18 @@ export const TableTrackerExtension = Extension.create<{}>({
 
       unfreezeHandles: () => {
         this.storage.view?.unfreezeHandles();
+      },
+
+      rowDragStart: (event: { clientY: number }) => {
+        this.storage.view?.rowDragStart(event);
+      },
+
+      colDragStart: (event: { clientX: number }) => {
+        this.storage.view?.colDragStart(event);
+      },
+
+      dragEnd: () => {
+        this.storage.view?.dragEnd();
       },
     };
 
