@@ -4,7 +4,10 @@ import { FloatingPortal } from "@floating-ui/react";
 import { Editor } from "@tiptap/core";
 import { TableTrackerState } from "../extensions/tableTrackerExtension";
 import { useExtendButtonsPositioning } from "./useExtendButtonsPositioning";
+import { useTableHandlesPositioning } from "./useTableHandlesPositioning";
 import ExtendButton from "./ExtendButton";
+import TableHandle from "./TableHandle";
+import TableCellButton from "./TableCellButton";
 import { CellSelection } from "@tiptap/pm/tables";
 
 interface TableHandlesControllerProps {
@@ -17,6 +20,9 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   const [state, setState] = useState<TableTrackerState | undefined>(undefined);
   const tableStateRef = useRef<TableTrackerState | null>(null);
   const editorRef = useRef(editor);
+  const [menuContainerRef, setMenuContainerRef] = useState<HTMLDivElement | null>(null);
+  const [hideRow, setHideRow] = useState<boolean>(false);
+  const [hideCol, setHideCol] = useState<boolean>(false);
 
   useEffect(() => {
     editorRef.current = editor;
@@ -54,12 +60,21 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     };
   }, [editor]);
 
+  const { rowHandle, colHandle, cellHandle } = useTableHandlesPositioning(
+    state?.show || false,
+    state?.referencePosCell || null,
+    state?.referencePosTable || null,
+  );
+
   const { addOrRemoveRowsButton, addOrRemoveColumnsButton } =
     useExtendButtonsPositioning(
       state?.showAddOrRemoveColumnsButton || false,  // Columns first!
       state?.showAddOrRemoveRowsButton || false,     // Rows second!
       state?.referencePosTable || null,
     );
+
+  // Get table tracker API for handle control
+  const tableTracker = (editor as any)?.tableTracker;
 
   // Helper to check if a cell has content (following BlockNote behavior)
   const cellHasContent = (cell: Element): boolean => {
@@ -228,23 +243,90 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     ) : null;
   };
 
+  console.log({
+    hideRow,
+    menuContainerRef,
+    rowHandle,
+    rowIndex: state.rowIndex
+  })
+
   return (
-    <FloatingPortal root={portalRoot}>
-      {renderButton(
-        addOrRemoveRowsButton,
-        "addOrRemoveRows",
-        handleAddRemoveRows,
-        "table-handle-rows-container",
-        state.showAddOrRemoveRowsButton
-      )}
-      {renderButton(
-        addOrRemoveColumnsButton,
-        "addOrRemoveColumns",
-        handleAddRemoveColumns,
-        "table-handle-columns-container",
-        state.showAddOrRemoveColumnsButton
-      )}
-    </FloatingPortal>
+    <>
+      {/* Menu container for portals - following BlockNote pattern */}
+      <div ref={setMenuContainerRef}></div>
+      
+      <FloatingPortal root={portalRoot}>
+        {/* Row Handle - appears on left when hovering over cells */}
+        {!hideRow &&
+          menuContainerRef &&
+          rowHandle.isMounted &&
+          state.rowIndex !== undefined && (
+            <div ref={rowHandle.ref} style={rowHandle.style}>
+              <TableHandle
+                editor={editor}
+                orientation="row"
+                index={state.rowIndex}
+                showOtherSide={() => setHideCol(false)}
+                hideOtherSide={() => setHideCol(true)}
+                freezeHandles={() => tableTracker?.freezeHandles()}
+                unfreezeHandles={() => tableTracker?.unfreezeHandles()}
+                menuContainer={menuContainerRef}
+              />
+            </div>
+          )}
+
+        {/* Column Handle - appears on top when hovering over cells */}
+        {!hideCol &&
+          menuContainerRef &&
+          colHandle.isMounted &&
+          state.colIndex !== undefined && (
+            <div ref={colHandle.ref} style={colHandle.style}>
+              <TableHandle
+                editor={editor}
+                orientation="column"
+                index={state.colIndex}
+                showOtherSide={() => setHideRow(false)}
+                hideOtherSide={() => setHideRow(true)}
+                freezeHandles={() => tableTracker?.freezeHandles()}
+                unfreezeHandles={() => tableTracker?.unfreezeHandles()}
+                menuContainer={menuContainerRef}
+              />
+            </div>
+          )}
+
+        {/* Cell Handle - appears at top-left of hovered cell */}
+        {menuContainerRef &&
+          cellHandle.isMounted &&
+          state.colIndex !== undefined &&
+          state.rowIndex !== undefined && (
+            <div ref={cellHandle.ref} style={cellHandle.style}>
+              <TableCellButton
+                editor={editor!}
+                rowIndex={state.rowIndex}
+                colIndex={state.colIndex}
+                freezeHandles={() => tableTracker?.freezeHandles()}
+                unfreezeHandles={() => tableTracker?.unfreezeHandles()}
+              />
+            </div>
+          )}
+
+        {/* Extend Buttons */}
+        {renderButton(
+          addOrRemoveRowsButton,
+          "addOrRemoveRows",
+          handleAddRemoveRows,
+          "table-handle-rows-container",
+          state.showAddOrRemoveRowsButton
+        )}
+        {renderButton(
+          addOrRemoveColumnsButton,
+          "addOrRemoveColumns",
+          handleAddRemoveColumns,
+          "table-handle-columns-container",
+          state.showAddOrRemoveColumnsButton
+        )}
+      </FloatingPortal>
+    </>
   );
 };
 
