@@ -11,7 +11,7 @@ function getBoundingClientRectRow(
 ) {
   if (draggingState && draggingState.draggedCellOrientation === "row") {
     return new DOMRect(
-      referencePosTable!.x,
+      referencePosTable!.x - 30, // Move further left
       draggingState.mousePos,
       referencePosTable!.width,
       0,
@@ -19,7 +19,7 @@ function getBoundingClientRectRow(
   }
 
   return new DOMRect(
-    referencePosTable!.x,
+    referencePosTable!.x - 30, // Move further left to be outside table
     referencePosCell!.y,
     referencePosTable!.width,
     referencePosCell!.height,
@@ -37,7 +37,7 @@ function getBoundingClientRectCol(
   if (draggingState && draggingState.draggedCellOrientation === "col") {
     return new DOMRect(
       draggingState.mousePos,
-      referencePosTable!.y,
+      referencePosTable!.y - 30, // Move further up
       0,
       referencePosTable!.height,
     );
@@ -45,7 +45,7 @@ function getBoundingClientRectCol(
 
   return new DOMRect(
     referencePosCell!.x,
-    referencePosTable!.y,
+    referencePosTable!.y - 30, // Move further up to be outside table
     referencePosCell!.width,
     referencePosTable!.height,
   );

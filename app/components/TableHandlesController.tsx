@@ -294,22 +294,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
             </div>
           )}
 
-        {/* Cell Handle - appears at top-left of hovered cell */}
-        {menuContainerRef &&
-          cellHandle.isMounted &&
-          state.colIndex !== undefined &&
-          state.rowIndex !== undefined && (
-            <div ref={cellHandle.ref} style={cellHandle.style}>
-              <TableCellButton
-                editor={editor!}
-                rowIndex={state.rowIndex}
-                colIndex={state.colIndex}
-                freezeHandles={() => tableTracker?.freezeHandles()}
-                unfreezeHandles={() => tableTracker?.unfreezeHandles()}
-              />
-            </div>
-          )}
-
         {/* Extend Buttons */}
         {renderButton(
           addOrRemoveRowsButton,
