@@ -2,6 +2,7 @@ import { RiAddFill } from "react-icons/ri";
 import styled from "@emotion/styled";
 import { FC, useRef } from "react";
 import { Editor } from "@tiptap/core";
+import { TextSelection } from "@tiptap/pm/state";
 
 const EMPTY_CELL_HEIGHT = 49;
 const EMPTY_CELL_WIDTH = 120;
@@ -22,8 +23,12 @@ const marginRound = (num: number, margin = 0.3) => {
 const ExtendButtonContainer = styled.button<{
   $isRow: boolean;
   $isDragging: boolean;
+  $isRemoveDisabled?: boolean;
 }>`
-  background-color: ${(props) => (props.$isDragging ? "#c0c0c0" : "#efefef")};
+  background-color: ${(props) => 
+    props.$isRemoveDisabled ? "#f5f5f5" :
+    props.$isDragging ? "#c0c0c0" : "#efefef"
+  };
   margin-top: ${(props) => (props.$isRow ? "4px" : "0px")};
   margin-left: ${(props) => (!props.$isRow ? "4px" : "0px")};
   color: white;
@@ -41,7 +46,10 @@ const ExtendButtonContainer = styled.button<{
   cursor: ${(props) => (props.$isRow ? "row-resize" : "col-resize")};
 
   &:hover {
-    background-color: ${(props) => (props.$isDragging ? "#c0c0c0" : "#d1d5db")};
+    background-color: ${(props) => 
+      props.$isRemoveDisabled ? "#f5f5f5" :
+      props.$isDragging ? "#c0c0c0" : "#d1d5db"
+    };
   }
 `;
 
@@ -50,6 +58,7 @@ interface ExtendButtonProps {
   onClick: (remove : boolean) => void;
   editor: Editor;
   tableElement: HTMLElement | null;
+  isRemoveDisabled?: boolean;
 }
 
 const ExtendButton: FC<ExtendButtonProps> = ({
@@ -57,6 +66,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
   onClick,
   editor,
   tableElement,
+  isRemoveDisabled = false,
 }) => {
   const isRow = orientation === "addOrRemoveRows";
   const startPosRef = useRef<number | null>(null);
@@ -75,7 +85,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
       if (pos === -1) return false;
 
       const tr = editor.state.tr.setSelection(
-        editor.state.selection.constructor.near(editor.state.doc.resolve(pos)),
+        TextSelection.near(editor.state.doc.resolve(pos)),
       );
       editor.view.dispatch(tr);
 
@@ -156,7 +166,16 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     e.stopPropagation();
 
     if (!isDraggingRef.current && startPosRef.current === null) {
-      onClick(false);
+      // For remove operations, check if disabled
+      if (e.shiftKey || e.altKey) {
+        if (isRemoveDisabled) {
+          console.log('Remove operation disabled: content detected');
+          return;
+        }
+        onClick(true); // Remove
+      } else {
+        onClick(false); // Add
+      }
     }
   };
 
@@ -164,14 +183,18 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     <ExtendButtonContainer
       $isRow={isRow}
       $isDragging={isDraggingRef.current}
+      $isRemoveDisabled={isRemoveDisabled}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
-      title={isRow ? "Add/Remove Rows" : "Add/Remove Columns"}
+      title={isRow ? 
+        (isRemoveDisabled ? "Add Rows (Remove disabled - content detected)" : "Add/Remove Rows (Shift+Click to remove)") : 
+        (isRemoveDisabled ? "Add Columns (Remove disabled - content detected)" : "Add/Remove Columns (Shift+Click to remove)")
+      }
     >
       <RiAddFill
-        color="#cfcfcf"
-        stroke="#cfcfcf"
-        fill="#cfcfcf"
+        color={isRemoveDisabled ? "#999" : "#cfcfcf"}
+        stroke={isRemoveDisabled ? "#999" : "#cfcfcf"}
+        fill={isRemoveDisabled ? "#999" : "#cfcfcf"}
         size={18}
         data-test={"extendButton"}
       />

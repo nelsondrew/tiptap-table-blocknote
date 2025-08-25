@@ -61,6 +61,63 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       state?.referencePosTable || null,
     );
 
+  // Helper to check if a cell has content (following BlockNote behavior)
+  const cellHasContent = (cell: Element): boolean => {
+    // Check if cell has non-empty text content (excluding whitespace)
+    const textContent = cell.textContent?.trim() || '';
+    if (textContent.length > 0) {
+      return true;
+    }
+    
+    // Check if cell has any child elements (images, etc.)
+    const hasChildElements = cell.children.length > 0;
+    if (hasChildElements) {
+      // Filter out empty paragraphs and br tags
+      const meaningfulChildren = Array.from(cell.children).filter(child => {
+        if (child.tagName === 'P') {
+          return child.textContent?.trim().length > 0;
+        }
+        if (child.tagName === 'BR') {
+          return false;
+        }
+        return true;
+      });
+      return meaningfulChildren.length > 0;
+    }
+    
+    return false;
+  };
+
+  // Check if last row has any content
+  const lastRowHasContent = (): boolean => {
+    if (!state?.tableElement) return false;
+    
+    const lastRow = state.tableElement.querySelector("tr:last-child");
+    if (!lastRow) return false;
+    
+    const cells = lastRow.querySelectorAll("td, th");
+    return Array.from(cells).some(cell => cellHasContent(cell));
+  };
+
+  // Check if last column has any content
+  const lastColumnHasContent = (): boolean => {
+    if (!state?.tableElement) return false;
+    
+    const rows = state.tableElement.querySelectorAll("tr");
+    if (rows.length === 0) return false;
+    
+    // Get all cells in the last column
+    const lastColumnCells: Element[] = [];
+    rows.forEach(row => {
+      const cells = row.querySelectorAll("td, th");
+      if (cells.length > 0) {
+        lastColumnCells.push(cells[cells.length - 1]);
+      }
+    });
+    
+    return lastColumnCells.some(cell => cellHasContent(cell));
+  };
+
   // Helper to select a cell and execute table command - improved error handling
   const selectCellAndExecute = (selector: string, command: () => void) => {
     if (!editor || !state?.tableElement) {
@@ -93,11 +150,19 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     }
   };
 
-  const handleRemoveLastRow = () =>
+  const handleRemoveLastRow = () => {
+    // BlockNote behavior: prevent deletion if row has content
+    if (lastRowHasContent()) {
+      console.log('Cannot delete row: Last row contains content');
+      // You could show a toast notification here
+      return;
+    }
+    
     selectCellAndExecute(
       "tr:last-child td:first-child, tr:last-child th:first-child",
       () => editor!.commands.deleteRow(),
     );
+  };
 
   const handleAddLastRow = () =>
     selectCellAndExecute(
@@ -105,11 +170,19 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       () => editor!.commands.addRowAfter(),
     );
 
-  const handleRemoveLastColumn = () =>
+  const handleRemoveLastColumn = () => {
+    // BlockNote behavior: prevent deletion if column has content
+    if (lastColumnHasContent()) {
+      console.log('Cannot delete column: Last column contains content');
+      // You could show a toast notification here
+      return;
+    }
+    
     selectCellAndExecute(
       "tr:last-child td:last-child, tr:last-child th:last-child",
       () => editor!.commands.deleteColumn(),
     );
+  };
 
   const handleAddLastColumn = () =>
     selectCellAndExecute(
@@ -137,17 +210,23 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
     handler: (remove: boolean) => void,
     className: string,
     shouldShow: boolean
-  ) => 
-    shouldShow && button?.isMounted ? (
+  ) => {
+    const isRemoveDisabled = orientation === "addOrRemoveRows" 
+      ? lastRowHasContent() 
+      : lastColumnHasContent();
+
+    return shouldShow && button?.isMounted ? (
       <div className={className} ref={button.ref} style={button.style}>
         <ExtendButton
           orientation={orientation}
           onClick={handler}
           editor={editor}
           tableElement={state.tableElement}
+          isRemoveDisabled={isRemoveDisabled}
         />
       </div>
     ) : null;
+  };
 
   return (
     <FloatingPortal root={portalRoot}>
