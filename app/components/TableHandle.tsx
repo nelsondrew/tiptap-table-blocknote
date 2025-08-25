@@ -1,5 +1,5 @@
 "use client";
-import React, { FC, ReactNode, useState, useRef, Dispatch, SetStateAction } from "react";
+import React, { FC, ReactNode, useState, Dispatch, SetStateAction } from "react";
 import styled from "@emotion/styled";
 import { MdDragIndicator } from "react-icons/md";
 import { Editor } from "@tiptap/core";

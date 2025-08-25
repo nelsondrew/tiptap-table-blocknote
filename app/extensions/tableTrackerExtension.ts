@@ -320,26 +320,144 @@ class TableTrackerView {
     }
   };
 
-  private dropHandler = (event: DragEvent) => {
+  private dropHandler = (event: Event) => {
+    const dragEvent = event as DragEvent;
     if (this.state.draggingState === undefined) {
       return false;
     }
 
-    event.preventDefault();
+    dragEvent.preventDefault();
     
     const { draggingState, colIndex, rowIndex } = this.state;
+    const fromIndex = draggingState.originalIndex;
+    const toIndex = draggingState.draggedCellOrientation === "row" ? rowIndex : colIndex;
     
-    console.log("📍 DROP!", {
-      orientation: draggingState.draggedCellOrientation,
-      from: draggingState.originalIndex,
-      to: draggingState.draggedCellOrientation === "row" ? rowIndex : colIndex
-    });
 
-    // Here we would implement the actual table manipulation
-    // For now, just log the drop
+    // Don't move if dropping on same position
+    if (fromIndex === toIndex || toIndex === undefined) {
+      return true;
+    }
+
+    // Perform the actual table manipulation
+    this.moveTableElement(draggingState.draggedCellOrientation, fromIndex, toIndex);
 
     return true;
   };
+
+  private moveTableElement(orientation: "row" | "column", fromIndex: number, toIndex: number) {
+    if (!this.state.tableElement) {
+      return;
+    }
+
+    // Find the table node in the ProseMirror document
+    const tableNode = this.findTableNode();
+    if (!tableNode) {
+      return;
+    }
+
+    if (orientation === "row") {
+      this.moveRowInTable(tableNode.pos, fromIndex, toIndex);
+    } else {
+      this.moveColumnInTable(tableNode.pos, fromIndex, toIndex);
+    }
+  }
+
+  private findTableNode(): { node: any; pos: number } | null {
+    const { state } = this.view;
+    let tableNode: { node: any; pos: number } | null = null;
+
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'table') {
+        tableNode = { node, pos };
+        return false; // Stop iteration
+      }
+    });
+
+    return tableNode;
+  }
+
+  private moveRowInTable(tablePos: number, fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
+
+    const { state } = this.view;
+    const { tr } = state;
+    const tableNode = state.doc.nodeAt(tablePos);
+    
+    if (!tableNode || tableNode.type.name !== 'table') {
+      return;
+    }
+
+    // Get the rows from the table content 
+    const rows: any[] = [];
+    tableNode.content.forEach((child: any) => {
+      if (child.type.name === 'tableRow') {
+        rows.push(child);
+      }
+    });
+
+    if (fromIndex >= rows.length || toIndex >= rows.length) {
+      return;
+    }
+
+    // Use BlockNote's array manipulation: splice out, then splice in
+    const [sourceRow] = rows.splice(fromIndex, 1);
+    rows.splice(toIndex, 0, sourceRow);
+
+    // Create new table node with reordered rows
+    const newTableNode = tableNode.type.create(
+      tableNode.attrs,
+      rows
+    );
+
+    // Replace the table in the document
+    tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTableNode);
+    this.view.dispatch(tr);
+  }
+
+  private moveColumnInTable(tablePos: number, fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
+
+    const { state } = this.view;
+    const { tr } = state;
+    const tableNode = state.doc.nodeAt(tablePos);
+    
+    if (!tableNode || tableNode.type.name !== 'table') {
+      return;
+    }
+
+    // Get all rows and move cells in each row
+    const newRows: any[] = [];
+    tableNode.content.forEach((rowNode: any) => {
+      if (rowNode.type.name === 'tableRow') {
+        const cells: any[] = [];
+        rowNode.content.forEach((cellNode: any) => {
+          if (cellNode.type.name === 'tableCell' || cellNode.type.name === 'tableHeader') {
+            cells.push(cellNode);
+          }
+        });
+
+        if (fromIndex < cells.length && toIndex < cells.length) {
+          // Use BlockNote's array manipulation: splice out, then splice in
+          const [sourceCell] = cells.splice(fromIndex, 1);
+          cells.splice(toIndex, 0, sourceCell);
+        }
+
+        // Create new row with reordered cells
+        const newRow = rowNode.type.create(rowNode.attrs, cells);
+        newRows.push(newRow);
+      }
+    });
+
+    // Create new table node with reordered content
+    const newTableNode = tableNode.type.create(
+      tableNode.attrs,
+      newRows
+    );
+
+    // Replace the table in the document
+    tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTableNode);
+    this.view.dispatch(tr);
+  }
 
   public rowDragStart = (event: { clientY: number }) => {
     if (this.state.rowIndex === undefined) {
