@@ -20,7 +20,7 @@ export default function GlobalStyles() {
 
         .tableWrapper {
           --bn-table-widget-size: 22px;
-          --bn-table-handle-size: 9px;
+          --bn-table-handle-size: 24px;
           padding: var(--bn-table-handle-size) var(--bn-table-widget-size)
             var(--bn-table-widget-size) var(--bn-table-handle-size);
           width: 100%;
