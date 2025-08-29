@@ -59,6 +59,8 @@ interface ExtendButtonProps {
   editor: Editor;
   tableElement: HTMLElement | null;
   isRemoveDisabled?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 const ExtendButton: FC<ExtendButtonProps> = ({
@@ -67,6 +69,8 @@ const ExtendButton: FC<ExtendButtonProps> = ({
   editor,
   tableElement,
   isRemoveDisabled = false,
+  onDragStart,
+  onDragEnd,
 }) => {
   const isRow = orientation === "addOrRemoveRows";
   const startPosRef = useRef<number | null>(null);
@@ -102,6 +106,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
     startPosRef.current = isRow ? e.clientY : e.clientX;
     appliedChangesRef.current = 0;
     isDraggingRef.current = true;
+    onDragStart?.();
 
     const handleMouseMove = (e: MouseEvent) => {
       if (startPosRef.current === null) return;
@@ -152,6 +157,7 @@ const ExtendButton: FC<ExtendButtonProps> = ({
       startPosRef.current = null;
       appliedChangesRef.current = 0;
       isDraggingRef.current = false;
+      onDragEnd?.();
 
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);

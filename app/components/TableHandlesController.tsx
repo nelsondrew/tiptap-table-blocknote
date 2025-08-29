@@ -25,6 +25,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
   const [hideCol, setHideCol] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMenuOpenRef = useRef(false);
+  const [isExtendButtonDragging, setIsExtendButtonDragging] = useState<boolean>(false);
 
   useEffect(() => {
     editorRef.current = editor;
@@ -263,6 +264,8 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
           editor={editor}
           tableElement={state.tableElement}
           isRemoveDisabled={isRemoveDisabled}
+          onDragStart={() => setIsExtendButtonDragging(true)}
+          onDragEnd={() => setIsExtendButtonDragging(false)}
         />
       </div>
     ) : null;
@@ -279,6 +282,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       
         {/* Row Handle - appears on left when hovering over cells */}
         {!hideRow &&
+          !isExtendButtonDragging &&
           menuContainerRef &&
           rowHandle.isMounted &&
           state.rowIndex !== undefined && (
@@ -302,6 +306,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
 
         {/* Column Handle - appears on top when hovering over cells */}
         {!hideCol &&
+          !isExtendButtonDragging &&
           menuContainerRef &&
           colHandle.isMounted &&
           state.colIndex !== undefined && (
