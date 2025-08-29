@@ -4,7 +4,7 @@ import styled from "@emotion/styled";
 import { MdDragIndicator } from "react-icons/md";
 import { Editor } from "@tiptap/core";
 import { createPortal } from "react-dom";
-import { useFloating, autoUpdate, offset, flip, shift } from "@floating-ui/react";
+import { useFloating, autoUpdate, offset, flip, shift, useClick, useDismiss, useInteractions } from "@floating-ui/react";
 import { TableHandleMenu } from "./TableHandleMenu";
 
 const TableHandleButton = styled.button`
@@ -92,9 +92,19 @@ export const TableHandle: FC<TableHandleProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const { refs, floatingStyles } = useFloating({
+  const { refs, floatingStyles, context } = useFloating({
     open: showMenu,
-    onOpenChange: setShowMenu,
+    onOpenChange: (open) => {
+      setShowMenu(open);
+      setIsMenuOpen?.(open);
+      if (open) {
+        freezeHandles?.();
+        hideOtherSide?.();
+      } else {
+        unfreezeHandles?.();
+        showOtherSide?.();
+      }
+    },
     middleware: [
       offset(8),
       flip(),
@@ -104,17 +114,9 @@ export const TableHandle: FC<TableHandleProps> = ({
     placement: orientation === "row" ? "right-start" : "bottom-start",
   });
 
-  const handleClick = () => {
-    setShowMenu(!showMenu);
-    setIsMenuOpen?.(!showMenu);
-    if (!showMenu) {
-      freezeHandles?.();
-      hideOtherSide?.();
-    } else {
-      unfreezeHandles?.();
-      showOtherSide?.();
-    }
-  };
+  const click = useClick(context);
+  const dismiss = useDismiss(context);
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
   const handleMenuClose = () => {
     setShowMenu(false);
@@ -167,7 +169,6 @@ export const TableHandle: FC<TableHandleProps> = ({
       <TableHandleButton
         ref={refs.setReference}
         className={isDragging ? "dragging" : ""}
-        onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseDown={handleMouseDown}
@@ -182,6 +183,7 @@ export const TableHandle: FC<TableHandleProps> = ({
             ? { transform: "rotate(0.25turn)" }
             : undefined
         }
+        {...getReferenceProps()}
       >
         {children || <DragIcon />}
       </TableHandleButton>
@@ -195,6 +197,7 @@ export const TableHandle: FC<TableHandleProps> = ({
               ...floatingStyles,
               zIndex: 999999,
             }}
+            {...getFloatingProps()}
           >
             <TableHandleMenu
               editor={editor}
@@ -212,6 +215,7 @@ export const TableHandle: FC<TableHandleProps> = ({
               ...floatingStyles,
               zIndex: 999999,
             }}
+            {...getFloatingProps()}
           >
             <TableHandleMenu
               editor={editor}
