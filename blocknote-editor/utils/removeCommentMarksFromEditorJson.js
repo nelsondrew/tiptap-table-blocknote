@@ -94,11 +94,34 @@ export function removeCommentMarksFromHtml(html) {
   const hasTableContent = html.includes('<table') || html.includes('<td') || html.includes('<th');
   if (hasTableContent) {
     console.log('🔧 Table content detected - using table-safe comment removal');
+    
+    // SAFETY CHECK: If HTML looks complex or potentially problematic, skip comment removal entirely for tables
+    const hasComplexStructure = html.includes('<tbody>') || html.includes('<thead>') || 
+                                html.includes('colspan') || html.includes('rowspan') ||
+                                html.includes('style=') || html.includes('class=');
+    
+    if (hasComplexStructure) {
+      console.log('⚠️ Complex table structure detected - skipping comment removal to prevent crashes');
+      return html; // Return original HTML to avoid any processing that might cause issues
+    }
   }
 
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
+    
+    // Check if parsing was successful
+    if (!doc || !doc.body) {
+      console.warn('⚠️ Failed to parse HTML, using original content');
+      return html;
+    }
+    
+    // Additional validation for malformed HTML
+    const parserErrors = doc.querySelectorAll('parsererror');
+    if (parserErrors.length > 0) {
+      console.warn('⚠️ HTML parsing errors detected, using original content');
+      return html;
+    }
     
     // Remove comment-related elements and attributes
     const commentSelectors = [
@@ -110,7 +133,28 @@ export function removeCommentMarksFromHtml(html) {
       const elements = doc.querySelectorAll(selector);
       console.log(`Found ${elements.length} elements with selector: ${selector}`);
       elements.forEach(element => {
-        // Remove comment-related attributes
+        // SIMPLE FIX: Skip processing any element that's inside a table
+        let isInTable = false;
+        let parent = element.parentNode;
+        while (parent && parent !== doc.body) {
+          if (parent.tagName && (parent.tagName.toLowerCase() === 'table' || 
+                                 parent.tagName.toLowerCase() === 'tbody' || 
+                                 parent.tagName.toLowerCase() === 'thead' ||
+                                 parent.tagName.toLowerCase() === 'tr' ||
+                                 parent.tagName.toLowerCase() === 'td' || 
+                                 parent.tagName.toLowerCase() === 'th')) {
+            isInTable = true;
+            break;
+          }
+          parent = parent.parentNode;
+        }
+        
+        if (isInTable) {
+          console.log('🚫 Skipping comment removal for element inside table');
+          return; // Skip this element entirely
+        }
+        
+        // Remove comment-related attributes (only for non-table elements)
         const commentAttributes = [
           'data-comment-id'
         ];
@@ -121,7 +165,7 @@ export function removeCommentMarksFromHtml(html) {
           }
         });
         
-        // Remove comment-related classes
+        // Remove comment-related classes (only for non-table elements)
         const commentClasses = [
           'comment-marked',
           'inline-comment-active'
@@ -133,35 +177,18 @@ export function removeCommentMarksFromHtml(html) {
           }
         });
         
-        // If the element is a span with only comment-related content, unwrap it
-        // BUT AVOID unwrapping spans inside table cells to prevent structure corruption
+        // Unwrap empty spans (only for non-table elements)
         if (element.tagName.toLowerCase() === 'span' && 
             element.classList.length === 0 && 
             !element.hasAttribute('style') && 
             !element.hasAttribute('class') &&
             !element.hasAttribute('id')) {
-          
-          // CRITICAL FIX: Check if span is inside a table cell - don't unwrap to preserve structure
-          let isInTableCell = false;
-          let parent = element.parentNode;
-          while (parent && parent !== doc.body) {
-            if (parent.tagName && (parent.tagName.toLowerCase() === 'td' || parent.tagName.toLowerCase() === 'th')) {
-              isInTableCell = true;
-              break;
-            }
-            parent = parent.parentNode;
+          // Safe to unwrap - not in a table
+          const parent = element.parentNode;
+          while (element.firstChild) {
+            parent.insertBefore(element.firstChild, element);
           }
-          
-          if (!isInTableCell) {
-            // Safe to unwrap - not in a table cell
-            const parent = element.parentNode;
-            while (element.firstChild) {
-              parent.insertBefore(element.firstChild, element);
-            }
-            parent.removeChild(element);
-          } else {
-            console.log('🚫 Skipping span unwrap inside table cell to preserve structure');
-          }
+          parent.removeChild(element);
         }
       });
     });
@@ -170,13 +197,37 @@ export function removeCommentMarksFromHtml(html) {
     
     // Additional validation for table content to prevent corruption
     if (hasTableContent) {
-      // Quick validation - ensure we didn't break table structure
+      // Comprehensive table structure validation
       const originalTableCount = (html.match(/<table/g) || []).length;
-      const resultTableCount = (result.match(/<table/g) || []).length;
+      const originalTdCount = (html.match(/<td/g) || []).length;
+      const originalThCount = (html.match(/<th/g) || []).length;
       
-      if (originalTableCount !== resultTableCount) {
-        console.warn('⚠️ Table structure may have been corrupted during comment removal, using original HTML');
+      const resultTableCount = (result.match(/<table/g) || []).length;
+      const resultTdCount = (result.match(/<td/g) || []).length;
+      const resultThCount = (result.match(/<th/g) || []).length;
+      
+      if (originalTableCount !== resultTableCount || 
+          originalTdCount !== resultTdCount || 
+          originalThCount !== resultThCount) {
+        console.warn('⚠️ Table structure corrupted during comment removal:', {
+          tables: { original: originalTableCount, result: resultTableCount },
+          cells: { original: originalTdCount, result: resultTdCount },
+          headers: { original: originalThCount, result: resultThCount }
+        });
         return html;
+      }
+      
+      // Additional check - ensure no empty table cells were created
+      const resultDoc = parser.parseFromString(result, "text/html");
+      const emptyCells = resultDoc.querySelectorAll('td:empty, th:empty');
+      if (emptyCells.length > 0) {
+        console.log(`🔧 Found ${emptyCells.length} empty table cells - adding placeholder content`);
+        emptyCells.forEach(cell => {
+          cell.innerHTML = '&nbsp;'; // Add non-breaking space to prevent empty cell issues
+        });
+        const fixedResult = resultDoc.body.innerHTML;
+        console.log('✅ Table structure preserved and empty cells fixed');
+        return fixedResult;
       }
       
       console.log('✅ Table structure preserved during comment removal');
