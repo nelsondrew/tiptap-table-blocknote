@@ -1,0 +1,1352 @@
+// Set default font family for TipTap editor
+.ProseMirror, .ProseMirror h1, .ProseMirror h2, .ProseMirror h3  {
+  font-family: Aptos, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto Flex', sans-serif;
+}
+
+/* Ensure cursor consistency after inline metrics */
+.node-metric {
+  display: inline-block !important;
+  max-width: none !important; /* Remove restrictive width */
+  width: auto !important; /* Allow natural width */
+  overflow: visible !important; /* Allow content to show */
+  font-size: inherit !important;
+  line-height: inherit !important;
+  vertical-align: baseline !important; /* Ensure proper alignment */
+}
+
+/* Ensure metric content respects width constraints */
+.node-metric[data-metric] {
+  display: inline-block !important;
+  max-width: none !important; /* Remove restrictive width */
+  width: auto !important; /* Allow natural width */
+  overflow: visible !important; /* Allow content to show */
+  font-size: inherit !important;
+  line-height: inherit !important;
+  vertical-align: baseline !important; /* Ensure proper alignment */
+}
+
+/* Specific override for (no value) text to ensure 92px width */
+.node-metric .NoValueText,
+.node-metric span[class*="NoValueText"] {
+  width: 92px !important;
+  min-width: 92px !important;
+  max-width: 92px !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+/* Hover effect for (no value) text - ONLY in edit mode */
+.dashboard--editing .node-metric .metric-wrapper.no-value span:hover,
+.dashboard--editing .node-metric .metric-wrapper.no-value .NoValueText:hover {
+  color: var(--Brand-brand-500, #00B0B3) !important;
+}
+
+/* Focus effect for (no value) text - ONLY in edit mode */
+.dashboard--editing .node-metric .metric-wrapper:not(.error).no-value .focused {
+  width: 102px !important; /* 92px + 10px for border/padding */
+  min-width: 102px !important;
+  max-width: 102px !important;
+  border: 1px solid var(--Brand-brand-500, #00B0B3) !important;
+  border-radius: 4px !important;
+  background: var(--Brand-brand-50, #F2FBFB) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  
+//   span, .NoValueText {
+//     color: var(--Brand-brand-500, #00B0B3) !important;
+//     font-size: 16px !important;
+//     font-style: normal !important;
+//     font-weight: 700 !important;
+//     line-height: 24px !important;
+//     text-align: center !important;
+//     display: flex !important;
+//     align-items: center !important;
+//     justify-content: center !important;
+//     width: 100% !important;
+//     padding: 0 !important;
+//     margin: 0 !important;
+//   }
+}
+
+/* When filter UI is open, remove the border to prevent double borders */
+.dashboard--editing .node-metric .metric-wrapper:not(.error).no-value.filter-ui-open.focused {
+  border: 1px solid #00b0b3 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure no borders are applied to any child elements when filter UI is open */
+.dashboard--editing .node-metric .metric-wrapper:not(.error).no-value.filter-ui-open.focused * {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Alternative selectors for better coverage - hover only */
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper:not(.error).no-value span.focused,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper:not(.error).no-value span:hover,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper:not(.error).no-value .NoValueText:hover {
+  color: var(--Brand-brand-500, #00B0B3) !important;
+}
+
+// .dashboard--editing .node-metric .metric-wrapper:not(.error).no-value .edit-icon,
+.dashboard--editing .node-metric .metric-wrapper.error .focused .delete-icon {
+    display: none !important;
+}
+
+.dashboard--editing .ProseMirror .node-metric > :not(.focused) .metric-wrapper:not(.error).no-value:hover > :not(span.focused) {
+    // width: 91px !important;
+    .edit-icon {
+        display: inline-block !important;
+    }
+}
+
+.dashboard--editing .node-metric .focused .metric-wrapper:not(.error).no-value:hover :has(span.focused) {
+    .edit-icon {
+      display: none !important;
+    }
+  }
+
+.dashboard--editing .node-metric .metric-wrapper.has-value.focused .edit-icon {
+  display: none !important;
+}
+
+.dashboard--editing .node-metric .metric-wrapper.has-value:not(.focused) {
+    .edit-icon {
+        display: none !important;
+    }
+
+    &:hover {
+        /* Let ValueMetricWrapper styled component handle the width and icon display */
+        .edit-icon {
+            display: inline-block !important;
+        }
+    }
+}
+
+.dashboard--editing .node-metric .metric-wrapper.no-value:not(.focused) {
+    .edit-icon {
+        display: none !important;
+    }
+
+    &:hover {
+        /* Let NoValueMetricWrapper styled component handle the width and icon display */
+        .edit-icon {
+            display: inline-block !important;
+        }
+    }
+}
+/* Additional selectors for better specificity */
+.dashboard--editing .node-metric .metric-wrapper.no-value.focused span,
+.dashboard--editing .node-metric .metric-wrapper.no-value.focused .NoValueText,
+.dashboard--editing .node-metric .metric-wrapper.no-value.filter-ui-open.focused span,
+.dashboard--editing .node-metric .metric-wrapper.no-value.filter-ui-open.focused .NoValueText {
+  color: var(--Brand-brand-500, #00B0B3) !important;
+  font-size: 16px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper.no-value.focused span,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper.no-value.focused .NoValueText,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper.no-value.filter-ui-open.focused span,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper.no-value.filter-ui-open.focused .NoValueText {
+  color: var(--Brand-brand-500, #00B0B3) !important;
+  font-size: 16px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Focus styles for all metrics (not just no-value) */
+.dashboard--editing .node-metric .metric-wrapper.focused {
+//   border: 1px solid var(--Brand-brand-500, #00B0B3) !important;
+  border-radius: 4px !important;
+  background: var(--Brand-brand-50, #F2FBFB) !important;
+  /* Remove display: flex and justify-content to let styled components handle layout */
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+}
+
+.dashboard--editing .node-metric .metric-wrapper.focused.has-value {
+    border: 1px solid var(--Brand-brand-500, #00B0B3) !important;
+    /* Let ValueMetricWrapper styled component handle the width and layout */
+}
+
+.dashboard--editing .node-metric .metric-wrapper.focused.error {
+    border: 1px solid var(--Guidance-guidance-alert, #E42121) !important;
+    /* Let ErrorMetricWrapper styled component handle the width and layout */
+}
+
+.dashboard--editing .node-metric .metric-wrapper.focused span,
+.dashboard--editing .node-metric .metric-wrapper.focused .NoValueText {
+  color: var(--Brand-brand-500, #00B0B3) !important;
+  font-size: 16px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Hover effect for (Error) text - ONLY in edit mode */
+.dashboard--editing .node-metric .metric-wrapper.error:not(.view-mode):hover,
+.dashboard--editing .ProseMirror .node-metric .metric-wrapper.error:not(.view-mode):hover {
+  /* Let ErrorMetricWrapper styled component handle the hover styles */
+}
+
+/* Ensure no hover effects for error metrics in view mode */
+.node-metric .metric-wrapper.view-mode.error:hover,
+.ProseMirror .node-metric .metric-wrapper.view-mode.error:hover {
+  background: transparent !important;
+  
+  > div {
+    background: transparent !important;
+    
+    .delete-icon {
+      opacity: 0 !important;
+      display: none !important;
+    }
+  }
+}
+
+.dashboard--editing .node-metric .metric-wrapper.filter-ui-open.error.focused span {
+  color: #e42121 !important;
+}
+
+/* Comprehensive view mode rules - NO interactive elements or hover effects */
+.node-metric .metric-wrapper.view-mode,
+.ProseMirror .node-metric .metric-wrapper.view-mode {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important; /* Keep pointer for tooltip functionality */
+  transition: none !important; /* Disable all transitions */
+  /* Remove fixed widths in view mode for natural text flow */
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  
+  /* Ensure (no value) text color is always #9c9c9c in view mode */
+  &.no-value span {
+    color: #9c9c9c !important;
+  }
+  
+  /* Hide all interactive icons in view mode */
+  .edit-icon,
+  .delete-icon,
+  img[src*="inline-metrics-edit"],
+  img[src*="inline-metrics-red-cross"] {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Ensure no hover effects */
+  &:hover {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+    
+    .edit-icon,
+    .delete-icon,
+    img[src*="inline-metrics-edit"],
+    img[src*="inline-metrics-red-cross"] {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  }
+  
+  /* Ensure no focus effects */
+  &:focus,
+  &.focused {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  /* Ensure text doesn't shift */
+  span, div {
+    // color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+    text-decoration: none !important;
+    transition: none !important;
+  }
+  
+  /* Ensure no gaps or spacing changes */
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Fix cursor size after inline metrics */
+.ProseMirror .node-metric + * {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Ensure cursor consistency in the editor */
+.ProseMirror {
+  .page-title,
+  h1[level="0"],
+  .page-title span[style*="font-size: 40px"],
+  h1[level="0"] span[style*="font-size: 40px"] {
+      font-weight: 700 !important;
+      font-size: 40px !important;
+      line-height: 48px !important;
+      letter-spacing: 1%;
+      vertical-align: bottom;
+      color: #000 !important;
+  }
+
+  // Page Title container styling
+  .page-title,
+  h1[level="0"] {
+      margin-top: 24px !important;
+      margin-bottom: 16px !important;
+  }
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  white-space: inherit !important;
+}
+
+/* Fix for nested date filter popover in metric node context */
+.inline-metrics.adhoc-filter-edit-popover {
+  z-index: 8998 !important;
+  .ant-select-selector {
+    .ant-select-selection-search, .ant-select-selection-item, .ant-select-selection-placeholder {
+        line-height: 42px !important;
+        font-weight: 400;
+    }
+  }
+  .date-filter-label-popover {
+    font-weight: 400;
+  }
+  .ant-select.subject-select {
+    .ant-select-selector .ant-select-selection-item span{
+        line-height: 42px !important; 
+    }
+  }
+  .ant-input {
+    font-size: 16px;
+  }
+}
+
+.date-filter-metric-node {
+  z-index: 8999 !important;
+  
+  /* Ensure popover follows trigger during scroll */
+  &.ant-popover {
+    position: fixed !important;
+    transform: none !important;
+  }
+  
+  /* Force repositioning during scroll */
+  &.ant-popover-hidden {
+    display: none !important;
+  }
+}
+
+.date-filter-metric-node .ant-popover {
+  z-index: 8999 !important;
+}
+
+.date-filter-metric-node .ant-popover-content {
+  z-index: 8999 !important;
+}
+
+/* Ensure popover appears at bottom when customPlacement is bottom */
+.ant-popover.date-filter-metric-node.ant-popover-placement-bottom,
+.ant-popover.date-filter-metric-node.ant-popover-placement-bottomLeft,
+.ant-popover.date-filter-metric-node.ant-popover-placement-bottomRight {
+  margin-top: 8px !important;
+}
+
+/* Override any container overflow that might clip the popover */
+.inline-metrics.floating-add-filter-popover,
+.inline-metrics.adhoc-filter-edit-popover {
+  overflow: visible !important;
+}
+
+.inline-metrics .filter-edit-popover {
+  overflow: visible !important;
+}
+
+/* Date filter trigger styling for metric nodes */
+.date-filter-label-trigger.date-filter-metric-node {
+  cursor: pointer;
+  position: relative;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.ant-popover.sql-popover {
+    .ant-popover-inner-content {
+        width: auto !important;
+    }
+}
+
+// Table Specific
+// .ProseMirror .tableWrapper {
+//     overflow-x: unset;
+// }
+
+// .ProseMirror table {
+//     border-collapse: collapse;
+//     min-width: fit-content;
+//     width: auto; //100%;
+// }
+
+// .ProseMirror th, .ProseMirror td {
+//     border: 1px solid #ddd;
+//     padding: 8px;
+//     position: relative;
+// }
+
+// .ProseMirror th:hover,
+// .ProseMirror td:hover {
+//     cursor: col-resize;
+// }
+
+// Floating formatter
+.tippy-box {
+    background-color: transparent;
+    max-width: 100% !important;
+}
+
+.tiptap {
+  /* Link styles */
+  a {
+    color: #00b0b3;
+    cursor: pointer;
+
+    &:hover {
+      color: #00b0b3;
+      text-decoration: none; //underline;
+    }
+  }
+}
+
+// Table Specific
+// /* Table-specific styling */
+.tiptap {
+    &.resize-cursor {
+        cursor: ew-resize;
+        cursor: col-resize;
+    }
+}
+
+// Paragraph spacing
+/*.ProseMirror p {
+    padding-left: 0.5rem !important;
+    margin-left: 0.5rem !important;
+}*/
+
+.ProseMirror p.is-empty::before {
+    margin-left: 3rem !important;
+}
+
+// Cover page specific overrides
+.blocknote-editor.cover-page {
+    .ProseMirror {
+
+      .page-title,
+  h1[level="0"],
+  .page-title span[style*="font-size: 40px"],
+  h1[level="0"] span[style*="font-size: 40px"] {
+      font-weight: 700 !important;
+      font-size: 40px !important;
+      line-height: 48px !important;
+      letter-spacing: 1%;
+      vertical-align: bottom;
+      color: #000 !important;
+  }
+
+  // Page Title container styling
+  .page-title,
+  h1[level="0"] {
+      margin-top: 24px !important;
+      margin-bottom: 16px !important;
+  }
+
+        // Reset default paragraph spacing for cover pages
+        p, h1, h2, h3 {
+            padding-left: 0 !important;
+            margin-left: 0 !important;
+        }
+        
+        // Force 80px margin for elements that have margin-left in their style
+        p[style*="margin-left: 80px"], 
+        h1[style*="margin-left: 80px"], 
+        h2[style*="margin-left: 80px"], 
+        h3[style*="margin-left: 80px"] {
+            margin-left: 80px !important;
+            padding-left: 0 !important;
+        }
+        
+        // Specific targeting for cover page content using classes
+        p.cover-page-company-name,
+        p.cover-page-description,
+        h1.cover-page-title,
+        h2.cover-page-welcome,
+        h2.cover-page-subtitle {
+            margin-left: 80px !important;
+            padding-left: 0 !important;
+        }
+    }
+}
+
+// ALWAYS hide floating menu in View mode
+.dashboard:not(.dashboard--editing) {
+    .plus-button,
+    .custom-floating-menu-pages,
+    .text-bubble-wrapper {
+        display: none;
+    }
+
+   
+}
+
+// Sequoia Overwrites - Product requirement:
+.blocknote-editor {
+    position: relative;
+	.ProseMirror {
+        // Page Title - Based on Figma specifications - Using custom class and level 0
+        .page-title,
+        h1[level="0"],
+        .page-title span[style*="font-size: 40px"],
+        h1[level="0"] span[style*="font-size: 40px"] {
+            font-weight: 700 !important;
+            font-size: 40px !important;
+            line-height: 48px !important;
+            letter-spacing: 1%;
+            vertical-align: bottom;
+            color: #000 !important;
+        }
+        
+        // Page Title container styling
+        .page-title,
+        h1[level="0"] {
+            margin-top: 24px !important;
+            margin-bottom: 16px !important;
+        }
+
+        // Paragraph
+        p[data-text-color="Default"] {
+            color: #000 !important;
+        }
+
+        // H1 overwrites
+        h1[level="1"] {
+            font-weight: 700 !important;
+            font-size: 30px !important;
+            //line-height: 40px !important;
+            letter-spacing: 1%;
+            vertical-align: bottom;
+            color: #000 !important
+        }
+
+        // H2 overwrites
+        h2[level="2"] {
+            font-weight: 700 !important;
+            font-size: 22px !important;
+            //line-height: 32px !important;
+            letter-spacing: 1%;
+            vertical-align: bottom;
+            margin-left: 2px;
+            color: #000 !important;
+        }
+
+        // H3 overwrites
+        h3[level="3"] {
+            font-weight: 700 !important;
+            font-size: 18px !important;
+           // line-height: 24px !important;
+            letter-spacing: 1%;
+            vertical-align: bottom;
+            margin-left: 2px;
+            color: #000 !important;
+        }
+
+        //  Quote
+        blockquote {
+            background: transparent;
+            border-left-color: #7d797a !important;
+            color: #666 !important;
+            // background-color: #f9f9f9;
+            margin: 0.5rem 0;
+            padding: 0.5rem 1rem;
+
+            p, h1, h2, h3, p[data-text-color="Default"] {
+                color: #666 !important;
+                font-size: 16px !important;
+                margin: 0;
+                white-space: normal;
+                word-break: break-word;
+                width: 100%;
+                display: block;
+            }
+        }
+
+        // Checklist
+        ul,
+        ol {
+          padding: 0 1rem;
+          margin: 1.25rem 1rem 1.25rem 0.4rem;
+      
+          li p {
+            margin-top: 0.25em;
+            margin-bottom: 0.25em;
+          }
+        }
+      
+        /* Task list specific styles */
+        ul[data-type="taskList"] {
+          list-style: none;
+          margin-left: 0;
+          padding: 0;
+          /* When the task item paragraph is just a trailingBreak, style the checkbox */
+          li[data-checked]:has(> div > p > br.ProseMirror-trailingBreak) > label > input[type="checkbox"] {
+            position: relative;
+            top: -15px;
+          }
+          li {
+            margin-left: 16px; // Required to balance the floating Plus menu
+              p[data-text-color="Default"] {
+                top: -5px;
+            }
+            &.is-empty {
+              label input[type="checkbox"] {
+                position: relative;
+                top: -15px;
+              }
+            }
+
+            > label {
+              flex: 0 0 auto;
+              margin-right: 0.5rem;
+              user-select: none;
+              & > input[type="checkbox"] {
+                margin-top: 0px !important
+              }
+            }
+      
+            > div {
+              display: inline-block;
+              margin-top: -5px;
+              p.is-empty::before {
+                margin-left: 0 !important;
+                left: 0 !important;
+                width: 400px;
+              }
+
+            }
+          }
+      
+          input[type="checkbox"] {
+            cursor: pointer;
+          }
+      
+          ul[data-type="taskList"] {
+            margin: 0;
+          }
+        }
+
+        // HRX Table Overwrite
+		// .table-chart-wrapper {
+		// 	#hrx-table-container {
+		// 		thead {
+		// 			th {
+		// 				// max-height: 30px;
+        //                 border: none !important;
+        //                 overflow: hidden;
+        //                 background-color: white !important;
+        //                 i {
+        //                     color: black !important;
+        //                 }
+		// 				>div:not(.column-actions-wrap) {
+		// 					border: none !important;
+        //                     overflow: hidden;
+		// 				}
+		// 				div {
+		// 					>span {
+		// 						color: #000;
+		// 						font-weight: 700 !important;
+		// 					}
+		// 				}
+		// 			}
+        //             th div th {
+        //                 border:  none !important;
+        //                 overflow: hidden;
+        //             }
+		// 		}
+		// 		tbody {
+		// 			td {
+		// 				// max-height: 30px;
+        //                 color: black;
+        //                 border-color: #000000 !important;
+		// 			}
+
+        //             tr {
+        //                 // border-left: 2px solid #ced4da;
+        //             }
+		// 		}
+
+        //         thead tr,
+        //         tbody tr {
+        //             border: 1px solid #000 !important;
+        //         }
+
+        //         thead tr th {
+        //             border-right: 1px solid #000 !important;
+        //         }
+
+        //         tbody tr {
+        //             border: 1px solid #000 !important;
+        //             td {
+        //                 td {
+        //                     border: none !important;
+        //                 }
+        //             }
+        //         }
+
+        //         tbody tr:nth-child(1) {
+        //             border-right: 1px solid #000 !important;
+        //             border-bottom: 1px solid #000 !important;
+        //             border-left: 1px solid #000 !important;
+        //             border-top: none !important;
+        //         }
+
+        //         tbody tr td { // :nth-child(1)
+        //             border: 1px solid #000 !important;
+        //             border-top: none !important;
+        //             td {
+        //                 border: none !important;
+        //             }
+        //         }
+		// 	}
+		// }
+
+        // Pivot table overwrites
+        // .pvtTable {
+        //     thead tr {
+        //         th, td {
+        //             border: 2px solid black !important;
+        //             color: #000 !important;
+        //             font-size: 16px;
+        //         }
+        //     }
+        //     tbody tr {
+        //         th, td {
+        //             border: 2px solid black !important;
+        //             color: #000 !important;
+        //             font-size: 16px;
+        //         }
+        //     }
+        // }
+
+        // Pivot table metric and plan type overwrite for div id="chart-id-6470"
+        #chart-id-6470 {
+            .pvtTable {
+                thead tr:nth-child(1) {
+                    th:nth-child(2) {
+                        border-bottom: none !important;
+                        border-left: none !important;
+                        visibility: hidden;
+                    }
+                }
+
+                thead tr:nth-child(2) {
+                    th:nth-child(2) {
+                        border-top: none !important;
+                        border-left: none !important;
+                    }
+                }
+
+                thead tr:nth-child(1) {
+                    th:nth-child(1) {
+                        border-bottom: none !important;
+                        border-right: none !important;
+                    }
+                }
+
+                thead tr:nth-child(2) {
+                    th:nth-child(1) {
+                        border-top: none !important;
+                        border-right: none !important;
+                        bottom: 12px;
+                    }
+                }
+            }
+        }
+
+        // Tiptap editor default table
+        .tableWrapper {
+            table tr th,
+            table tr td {
+                background-color: #fff;
+                // border-color: #000;
+                border: 1px solid #e5e5e5;
+                font-weight: normal;
+                padding: 24px 16px;
+            }
+            /* Leftmost cell in each row */
+            table tr td:first-child,
+            table tr th:first-child {
+                padding-left: 32px;
+            }
+
+            /* Rightmost cell in each row */
+            table tr td:last-child,
+            table tr th:last-child {
+                padding-right: 32px;
+            }
+
+        }
+
+        // Handlebar color overwrite
+        #chart-id-6829 {
+            color: #000 !important;
+        }
+
+        // Filter count indicator placement
+        .header-controls .filter-counts span {
+            // margin-left: -5px;
+        }
+
+        // Prevent TipTap paragraph styles from affecting AntD badge digits
+        .filter-counts,
+        .applied-count {
+            .ant-badge {
+                .ant-scroll-number-only p {
+                    margin: 0 !important;
+                    padding-left: 0 !important;
+                    // position: static !important;
+                }
+            }
+        }
+
+        // BigNumber Overwrites
+        .chart-slice .link-button {
+            display: none;
+        }
+
+        // BigNumber Overwrites - Duplicate Header removal
+        .chart-wrapper {
+            // Check if .chart-header .header-title exists within this wrapper
+            &:has(.chart-header .header-title) {
+              // Then hide the header-line
+              .superset-legacy-chart-big-number {
+                .text-container {
+                  .header-line {
+                    display: none;
+                  }
+                }
+              }
+            }
+          }
+	}
+
+    // Comments
+    span {
+        &.comment-marked {
+            cursor: pointer;
+            // background-color: #aef1f5; // text with comment
+            background: #BFEBEC;
+            background-blend-mode: multiply;
+            border-bottom: 1.5px solid #00B0B3;
+            transition: background-color 0.2s ease;
+
+            &:hover {
+                // background-color: #87e2e7; // hover state
+                background: #99DFE1;
+                background-blend-mode: multiply;
+                border-bottom: 1.5px solid #00B0B3;
+            }
+
+            &.inline-comment-active {
+                // background-color: #5dd4dc; // active state when sidebar or modal is open
+                background: #80D7D9;
+                background-blend-mode: multiply;
+                border-bottom: 1.5px solid #00B0B3;
+            }
+        }
+    }
+
+    // Hyperlink configuration
+    .tippy-box {
+        .hyperlink-preview-modal,
+        .hyperlink-set-modal,
+        .hyperlink-edit-modal {
+            background-color: #fff;
+            border-radius: 10px;
+            border: 1px solid #dadce0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 6px;
+            box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            margin-top: -6px;
+            color: #000;
+        
+            &__metadata {
+                width: 260px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                flex-direction: row-reverse;
+                border-right: 1px solid #e5e5e5;
+                a {
+                    color: #000;
+                    font-size: 0.9rem;
+                    margin-right: 6px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    
+                    font-weight: 400;
+                    font-size: 14px;
+                    line-height: 24px;
+                    letter-spacing: 1%;
+                    text-decoration: underline;
+                    text-decoration-style: solid;
+                    text-decoration-thickness: 0%;
+                }
+                img {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                }
+            }
+        
+            &__remove-button,
+            &__edit-button,
+            &__copy-button,
+            &__apply-button {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                // margin: 0 0.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.1s ease-in-out;
+                &:hover {
+                    background-color: #eee;
+                }
+                > svg {
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+        
+            form {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                input {
+                    border: 1px solid #dadce0;
+                    border-radius: 6px;
+                    padding: 0.4rem 0.8rem;
+                    margin-bottom: 0.2rem;
+                    width: 100%;
+                    &:last-of-type {
+                        margin-bottom: 0;
+                    }
+                }
+                .hyperlink-set-modal__buttons-wrapper,
+                .hyperlink-edit-modal__buttons-wrapper {
+                    margin-left: 8px;
+                    button {
+                        border-radius: 4px;
+                        // padding: 0px 8px;
+                        width: 67px;
+                        height: 36px;
+                        margin-bottom: 0.2rem;
+                        color: #9c9c9c;
+                        background: #fbfbfb;
+                        border: none;
+                        &:hover {
+                            background: transparent; //rgba(26, 115, 232, 0.04);
+                            color: #00b0b3;
+                        }
+                    }
+                }
+            }
+        }
+
+        .hyperlink-set-modal {
+            margin-top: -50px !important; //-48px !important;
+            // margin-left: -45px !important;
+            width: 300px;
+            box-shadow: 0px 1px 4px 1px #00000014;
+            border-radius: 4px;
+            border: 1px solid #f2f2f2;
+
+            form {
+                align-items: center;
+                justify-content: space-around;
+            }
+
+            .url-inputbox {
+                width: 209px;
+                border-radius: 4px;
+                border: 1px solid #e5e5e5;
+                &:hover {
+                    cursor: pointer;
+                }
+            }
+        }
+
+        .hyperlink-preview-modal {
+            // position: absolute;
+            // margin-top: -80px;
+            // margin-left: -35px;
+            // width: 340px;
+            // height: 52px;
+            border-radius: 4px;
+            // gap: 8px;
+            border-width: 1px;
+            padding: 8px;
+            border: 1px solid #F2F2F2;
+            box-shadow: 0px 1px 4px 1px #00000014;
+
+            .hyperlink-preview-modal__copy-button {
+                display: none;
+            }
+
+            .hyperlink-preview-modal__edit-button,
+            .hyperlink-preview-modal__remove-button {
+                background: transparent;
+                border: none;
+            }
+        }
+
+        .hyperlink-set-modal__buttons-wrapper {
+            button {
+                width: 70px;
+                border-radius: 4px;
+                font-weight: 400;
+                font-size: 14px;
+                line-height: 24px;
+                letter-spacing: 1%;
+                vertical-align: middle;
+                &:hover {
+                    cursor: pointer;
+                }
+            }
+        }
+        
+        .tippy-svg-arrow {
+            top: -6px !important;
+            display: none !important;
+        }
+    }
+}
+
+// Tippy.js Overwrites
+.tippy-content {
+    .inline-comment {
+        color: #000;
+    }
+    .inline-metrics.floating-add-filter-popover {
+        background: #fff;
+        box-shadow: 0px 4px 18px 0px #00000026;
+        border-radius: 8px;
+        padding: 16px;  
+    }
+}
+
+
+//CSS changes for page breaks
+.tiptap {
+    div.page-break-container {
+        position: relative;
+        background: white;
+        left: -56px;
+        width: calc(100% + 112px);
+        border-top: none;
+        height: auto;
+        .footer, .header {
+            background: #FFFFFF;
+        }
+    }
+    div.footer-only-container {
+        width: calc(100% - 77px)
+    }
+}
+.sequoia-pages .ProseMirror {
+    h1:not(table *) {
+        margin-top: 24px !important;
+        margin-bottom: 16px !important;
+        line-height: 36px !important;
+    }
+    h2:not(table *) {
+        margin-top: 20px !important;
+        margin-bottom: 12px !important;
+        line-height: 26px !important;
+    }
+    h3:not(table *) {
+        margin-top: 16px !important;
+        margin-bottom: 8px !important;
+        line-height: 22px !important;
+    }
+    /* Normal paragraph (no span inside) */
+    p:not(table *):not(:has(span)), p:not(table *):has(span:not([style*="font-size"])), p:not(table *):has(span[style*="font-size: 16px"]){
+      margin-top: 0px !important;
+      margin-bottom: 12px !important;
+      line-height: 24px !important;
+    }
+
+    /* Small para (span with font-size: 14px) */
+    p:not(table *):has(span[style*="font-size: 14px"]) {
+      margin-top: 0px !important;
+      margin-bottom: 8px !important;
+      line-height: 20px !important;
+    }
+
+    /* Caption para (span with font-size: 11px) */
+    p:not(table *):has(span[style*="font-size: 11px"]) {
+      margin-top: 4px !important;
+      margin-bottom: 6px !important;
+      line-height: 14px !important;
+    }
+    .node-threeColumn {
+        div[data-test-viz-type="table"] {
+            .dashboard-chart {
+                overflow: scroll
+            }
+        }
+    }
+
+
+}
+
+.blocknote-editor .rm-with-pagination {
+  .rm-page-header, .rm-first-page-header, .rm-page-footer {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+  }
+}
+
+.tiptap.rm-with-pagination {
+    .rm-pagination-gap {
+       left: -6px !important;
+       min-width: 705px !important; // Making the width same as fixed page width
+    }
+}
+
+.rm-first-page-header-left, .rm-page-header-left, .rm-page-footer-left,
+.rm-page-number, .rm-page-footer-right {
+    font-size: 12px;
+    color: #9C9C9C;
+    line-height: 20px;
+    &:hover {
+      color: #666666;
+    }
+}
+
+.rm-page-footer-left,
+.rm-page-number, .rm-page-footer-right {
+    margin-top: 16px;
+}
+
+.rm-first-page-header, .rm-page-header {
+    margin-top: 0px !important;
+    padding-top: 16px !important;
+}
+
+.ProseMirror.top-level-editor {
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+}
+
+
+// css styles for removing the page header for cover page
+.blocknote-editor.cover-page {
+    .rm-first-page-header {
+        display: none;
+    }
+}
+// inline metrics
+.logics-description p {
+    margin: 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+}
+    
+.logics-description * {
+    margin: 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+}
+
+.node-customImage img{
+  max-height: 800px !important;
+  max-width: 540px !important;
+}
+
+/* Header separator below header when focused or has value (edit and view modes) */
+.blocknote-editor .rm-first-page-header,
+.blocknote-editor .rm-page-header { position: relative; overflow: visible; }
+.blocknote-editor .rm-first-page-header.visible::after,
+.blocknote-editor .rm-page-header.visible::after,
+.blocknote-editor[data-edit-mode="true"] .rm-first-page-header:has(.rm-first-page-header-left:focus-within)::after,
+.blocknote-editor[data-edit-mode="true"] .rm-page-header:has(.rm-page-header-left:focus-within)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 3px;
+  width: 595px;
+  height: 1px;
+  background: #9C9C9C;
+}
+
+/* Footer separator above footer content (edit and view modes) */
+.blocknote-editor .rm-page-footer { position: relative; overflow: visible; }
+.blocknote-editor .rm-page-footer.visible::before,
+.blocknote-editor .rm-page-footer:has(.rm-page-footer-right .page-number-text)::before,
+.blocknote-editor .rm-page-footer:has(.rm-page-number)::before,
+.blocknote-editor[data-edit-mode="true"] .rm-page-footer:focus-within::before,
+.blocknote-editor[data-edit-mode="true"] .rm-page-footer:has(.rm-page-footer-left:focus-within)::before,
+.blocknote-editor[data-edit-mode="true"] .rm-page-footer:has(.rm-page-footer-right:focus-within)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 3px;
+  width: 595px;
+  height: 1px;
+  background: #9C9C9C;
+}
+
+/* Hover style for first page header text when not editing inline */
+.blocknote-editor[data-edit-mode="true"] {
+  .rm-first-page-header:not(.visible) .rm-first-page-header-left:not(:has(input)):hover,
+  .rm-page-header:not(.visible) .rm-page-header-left:not(:has(input)):hover,
+  .rm-page-footer:not(.visible) .rm-page-footer-left:not(:has(input)):hover {
+    max-height: 24px;
+    padding: 2px 8px;
+    background: #FBFBFB;
+    border-radius: 4px;
+    color: #666666;
+  }
+  .rm-first-page-header:not(.visible) .rm-first-page-header-left:not(:has(input)),
+  .rm-page-header:not(.visible) .rm-page-header-left:not(:has(input)),
+  .rm-page-footer:not(.visible) .rm-page-footer-left:not(:has(input)) {
+    padding: 2px 8px
+  }
+  .rm-first-page-header.visible .rm-first-page-header-left:not(:has(input)):hover,
+  .rm-page-header.visible .rm-page-header-left:not(:has(input)):hover,
+  .rm-page-footer.visible .rm-page-footer-left:not(:has(input)):hover {
+
+    color: #666666;
+  }
+
+  /* Page number (right) hover when page numbers are not enabled */
+  .rm-page-footer-right:not(:has(.page-number-text)):hover {
+    padding: 2px 8px;
+
+  }
+  .rm-page-footer-right:not(:has(.page-number-text)) {
+    padding: 2px 8px !important;
+    max-height: 24px;
+    color: #9C9C9C;
+    &:hover {
+      background: #FBFBFB;
+      border-radius: 4px;
+      color: #666666;
+      max-height: 24px;
+    }
+  }
+  .rm-page-footer-right .rm-page-number-popover { 
+    position:absolute; 
+    top:-48px; 
+    right:0; 
+    background:#FFF; 
+    border: 1px solid #F2F2F2;
+    border-radius:4px; 
+    box-shadow: 0px 0px 60px 0px #00000014;
+    padding:9px; 
+    opacity:0; 
+    pointer-events:none; 
+    transition:opacity 0.15s ease-in-out; 
+    z-index: 1000; 
+  }
+  .rm-page-footer-right .rm-page-number-remove{ 
+    border:none; 
+    background:transparent; 
+    color:#000000;
+    font-size: 12px;
+    line-height: 20px;
+    font-weight: 500; 
+    cursor:pointer; 
+    padding: 2px 4px;
+  }
+}
+.blocknote-editor .rm-with-pagination {
+  .rm-first-page-header, .rm-page-header {
+    margin-bottom: 8px !important;
+    padding-top: 19px !important;
+    .rm-first-page-header-left, .rm-page-header-left {
+      height: 24px;
+    }
+  }
+  .rm-page-footer {
+    margin-top: 8px !important;
+    .rm-page-footer-left, .rm-page-footer-right {
+      margin-top: 5px !important;
+      height: 24px;
+    }
+  }
+}

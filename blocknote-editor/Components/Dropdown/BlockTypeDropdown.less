@@ -1,0 +1,122 @@
+// Color variables (appears count calculates by raw css)
+@color0: #f2f2f2; // Appears 2 times
+@black: #000000; // Appears 2 times
+
+
+.pages {
+	.dropdown-container {
+		display: inline-block;
+		position: relative;
+	}
+	.dropdown-trigger {
+		align-items: center;
+		background: #fbfbfb;
+		border-radius: 2px;
+		border: 1px solid @color0;
+		color: @black;
+		cursor: pointer;
+		display: flex;
+		font-size: 14px;
+		gap: 8px;
+		height: 24px;
+		padding: 0px 5px;
+		width: 114px;
+		&:hover {
+			background-color: #fbfbfb;
+		}
+	}
+	.dropdown-tag {
+		font-size: 14px;
+		font-weight: bold;
+		margin-top: 3px;
+	}
+	.dropdown-chevron {
+		font-size: 10px;
+		margin-left: auto;
+	}
+	.dropdown-menu-pages {
+		background: white;
+		border-radius: 4px;
+		position: absolute;
+		width: 171px;
+		height: 352px;
+		z-index: 1000;
+		top: 32px;
+		left: 18px;
+		padding: 16px;
+		box-shadow: 0px 0px 60px 0px #00000014;
+	}
+	.dropdown-item {
+		align-items: center;
+		color: @black;
+		cursor: pointer;
+		display: flex;
+		font-size: 14px;
+		gap: 10px;
+		padding: 8px 12px;
+		&:hover {
+			background-color: #fbfbfb;
+			cursor: pointer;
+		}
+	}
+	.dropdown-item.selected {
+		color: #00B0B3;
+		width: 139px;
+		border-radius: 4px;
+		gap: 8px;
+		background-color: #fbfbfb;
+
+		.dropdown-label {
+			color: #00B0B3;
+		}
+
+		.dropdown-tag {
+			svg path {
+				fill: #00B0B3;
+			}
+		}
+	}
+
+	.dropdown-label {
+		font-weight: 500;
+		font-size: 12px;
+		line-height: 20px;
+		letter-spacing: 1%;
+		color: @black;
+		min-width: 58px;
+	}
+
+	.dropdown-menu-pages {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		margin-top: 6px;
+		background: white;
+		border: 1px solid #e5e7eb;
+		border-radius: 6px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		padding: 8px 0;
+		z-index: 100;
+		opacity: 0;
+		transform: translateY(-8px);
+		transition: opacity 0.2s ease, transform 0.2s ease;
+		pointer-events: none;
+
+		background: white;
+		border-radius: 4px;
+		position: absolute;
+		width: 170px;
+		height: 352px;
+		z-index: 1000;
+		top: 32px;
+		left: 18px;
+		padding: 16px;
+		box-shadow: 0px 0px 60px 0px #00000014;
+	  }
+	  
+	  .dropdown-menu-pages.show {
+		opacity: 1;
+		transform: translateY(0);
+		pointer-events: auto;
+	  }
+}

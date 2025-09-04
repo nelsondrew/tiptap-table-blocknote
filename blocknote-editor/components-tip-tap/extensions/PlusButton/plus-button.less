@@ -1,0 +1,45 @@
+.editor-container {
+    position: relative;
+}
+
+.line-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.plus-button {
+    opacity: 0; // 1;
+    // transition: opacity 0.2s ease-in-out;
+    cursor: pointer;
+    position: absolute;
+    left: 0px;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    color: #a39e9e;
+    font-size: 25px;
+    line-height: 22px;
+    margin-right: 20px;
+}
+
+.plus-button:hover {
+    opacity: 1;
+    background: rgba(230, 223, 223, 0.1);
+    // backdrop-filter: blur(5px);
+    cursor: pointer;
+}
+
+p:hover ~ .plus-button {
+    opacity: 1;
+    // transition: opacity 0.3s ease-in-out;
+}
+
+// ALWAYS hide plus button in View mode
+.dashboard:not(.dashboard--editing) {
+    .plus-button {
+        display: none;
+    }
+}

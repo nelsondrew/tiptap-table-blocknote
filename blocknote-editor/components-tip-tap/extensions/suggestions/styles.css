@@ -1,0 +1,22 @@
+
+.tiptap:first-child {
+    margin-top: 0;
+} 
+.tiptap .mention {
+    background-color: purple;
+    border-radius: 0.4rem;
+    box-decoration-break: clone;
+    color: white;
+    padding: 0.1rem 0.3rem;
+    
+}
+.tiptap .mention &::after {
+    content: "\200B";
+}
+.tippy-arrow {
+    display: none;
+}
+
+.tippy-box {
+    background: none;
+}
