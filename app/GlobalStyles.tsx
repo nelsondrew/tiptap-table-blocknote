@@ -26,6 +26,45 @@ export default function GlobalStyles() {
           width: 100%;
           position: relative;
           overflow-y: hidden;
+          overflow-x: scroll;
+        }
+
+        .tableWrapper::-webkit-scrollbar {
+          height: 0px;
+          transform: translateY(-5px);
+          transition: height 0.2s ease;
+        }
+
+        .tableWrapper:hover::-webkit-scrollbar {
+          height: 12px;
+        }
+
+        .tableWrapper::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tableWrapper::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(20px);
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tableWrapper::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 0, 0, 0.4);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          transform: scale(1.02);
+        }
+
+        .tableWrapper::-webkit-scrollbar-thumb:active {
+          background: rgba(0, 0, 0, 0.5);
+          transform: scale(0.98);
         }
 
         .bn-table,
