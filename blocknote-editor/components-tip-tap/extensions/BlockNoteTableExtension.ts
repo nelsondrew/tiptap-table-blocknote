@@ -120,7 +120,7 @@ const BlockNoteTableExtension = Extension.create({
         cellMinWidth: RESIZE_MIN_WIDTH,
         // View: null, // We'll handle the view in the table node
       }),
-      // tableEditing(),
+      tableEditing(), // Enable table editing plugin for proper Tab navigation
     ];
   },
 
@@ -153,15 +153,43 @@ const BlockNoteTableExtension = Extension.create({
       },
 
       Tab: () => {
-        return this.editor.commands.command(({ state, dispatch, view }) =>
-          goToNextCell(1)(state, dispatch, view),
-        );
+        // Check if we're in a table cell
+        const { state } = this.editor;
+        const { $from } = state.selection;
+        
+        // Find if we're inside a table cell
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+            // We're in a table, move to next cell
+            return this.editor.commands.command(({ state, dispatch, view }) =>
+              goToNextCell(1)(state, dispatch, view)
+            );
+          }
+        }
+        
+        // Not in a table, let default Tab behavior happen
+        return false;
       },
 
       "Shift-Tab": () => {
-        return this.editor.commands.command(({ state, dispatch, view }) =>
-          goToNextCell(-1)(state, dispatch, view),
-        );
+        // Check if we're in a table cell
+        const { state } = this.editor;
+        const { $from } = state.selection;
+        
+        // Find if we're inside a table cell
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+            // We're in a table, move to previous cell
+            return this.editor.commands.command(({ state, dispatch, view }) =>
+              goToNextCell(-1)(state, dispatch, view)
+            );
+          }
+        }
+        
+        // Not in a table, let default Shift-Tab behavior happen
+        return false;
       },
     };
   },
