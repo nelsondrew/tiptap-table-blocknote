@@ -90,6 +90,12 @@ export function removeCommentMarksFromHtml(html) {
 
   console.log('removeCommentMarksFromHtml - Input HTML:', html.substring(0, 200) + '...');
 
+  // Check if HTML contains tables - use more conservative approach
+  const hasTableContent = html.includes('<table') || html.includes('<td') || html.includes('<th');
+  if (hasTableContent) {
+    console.log('🔧 Table content detected - using table-safe comment removal');
+  }
+
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
@@ -128,22 +134,54 @@ export function removeCommentMarksFromHtml(html) {
         });
         
         // If the element is a span with only comment-related content, unwrap it
+        // BUT AVOID unwrapping spans inside table cells to prevent structure corruption
         if (element.tagName.toLowerCase() === 'span' && 
             element.classList.length === 0 && 
             !element.hasAttribute('style') && 
             !element.hasAttribute('class') &&
             !element.hasAttribute('id')) {
-          // Replace the span with its content
-          const parent = element.parentNode;
-          while (element.firstChild) {
-            parent.insertBefore(element.firstChild, element);
+          
+          // CRITICAL FIX: Check if span is inside a table cell - don't unwrap to preserve structure
+          let isInTableCell = false;
+          let parent = element.parentNode;
+          while (parent && parent !== doc.body) {
+            if (parent.tagName && (parent.tagName.toLowerCase() === 'td' || parent.tagName.toLowerCase() === 'th')) {
+              isInTableCell = true;
+              break;
+            }
+            parent = parent.parentNode;
           }
-          parent.removeChild(element);
+          
+          if (!isInTableCell) {
+            // Safe to unwrap - not in a table cell
+            const parent = element.parentNode;
+            while (element.firstChild) {
+              parent.insertBefore(element.firstChild, element);
+            }
+            parent.removeChild(element);
+          } else {
+            console.log('🚫 Skipping span unwrap inside table cell to preserve structure');
+          }
         }
       });
     });
     
     const result = doc.body.innerHTML;
+    
+    // Additional validation for table content to prevent corruption
+    if (hasTableContent) {
+      // Quick validation - ensure we didn't break table structure
+      const originalTableCount = (html.match(/<table/g) || []).length;
+      const resultTableCount = (result.match(/<table/g) || []).length;
+      
+      if (originalTableCount !== resultTableCount) {
+        console.warn('⚠️ Table structure may have been corrupted during comment removal, using original HTML');
+        return html;
+      }
+      
+      console.log('✅ Table structure preserved during comment removal');
+    }
+    
     console.log('removeCommentMarksFromHtml - Output HTML:', result.substring(0, 200) + '...');
     return result;
   } catch (error) {
