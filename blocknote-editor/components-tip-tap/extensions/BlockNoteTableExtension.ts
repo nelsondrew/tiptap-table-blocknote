@@ -7,7 +7,6 @@ import {
   TableView,
   columnResizing,
   goToNextCell,
-  tableEditing,
 } from "prosemirror-tables";
 import { NodeView } from "prosemirror-view";
 
@@ -18,8 +17,8 @@ export const EMPTY_CELL_HEIGHT = 31;
 // BlockNote-style Table Paragraph for cells
 const TableParagraph = Node.create({
   name: "tableParagraph",
-  group: "tableContent",
-  content: "block+",
+  group: "block tableContent",
+  content: "inline*",
 
   parseHTML() {
     return [
@@ -67,20 +66,20 @@ const BlockNoteTableRow = Node.create({
 // Enhanced Table Cell with BlockNote features
 const BlockNoteTableCell = TableCell.extend({
   name: "tableCell",
-  content: "tableParagraph+", // Use tableParagraph instead of generic content
+  content: "block+", // Allow any block content including paragraphs, lists, etc.
   parseHTML() {
     return [
       {
         tag: "td",
         getContent: (node: HTMLElement, schema: Schema) => {
-          // Simple content parsing - just get text content
+          // Create a paragraph node with the text content
           const text = node.textContent || "";
           if (text) {
             return Fragment.from(
-              schema.nodes.tableParagraph.create(null, schema.text(text)),
+              schema.nodes.paragraph.create(null, schema.text(text)),
             );
           }
-          return Fragment.from(schema.nodes.tableParagraph.create());
+          return Fragment.from(schema.nodes.paragraph.create());
         },
       },
     ];
@@ -90,20 +89,20 @@ const BlockNoteTableCell = TableCell.extend({
 // Enhanced Table Header with BlockNote features
 const BlockNoteTableHeader = TableHeader.extend({
   name: "tableHeader",
-  content: "tableParagraph+", // Use tableParagraph instead of generic content
+  content: "block+", // Allow any block content including paragraphs, lists, etc.
   parseHTML() {
     return [
       {
         tag: "th",
         getContent: (node: HTMLElement, schema: Schema) => {
-          // Simple content parsing - just get text content
+          // Create a paragraph node with the text content
           const text = node.textContent || "";
           if (text) {
             return Fragment.from(
-              schema.nodes.tableParagraph.create(null, schema.text(text)),
+              schema.nodes.paragraph.create(null, schema.text(text)),
             );
           }
-          return Fragment.from(schema.nodes.tableParagraph.create());
+          return Fragment.from(schema.nodes.paragraph.create());
         },
       },
     ];
@@ -120,75 +119,139 @@ const BlockNoteTableExtension = Extension.create({
         cellMinWidth: RESIZE_MIN_WIDTH,
         // View: null, // We'll handle the view in the table node
       }),
-      tableEditing(), // Enable table editing plugin for proper Tab navigation
+      // tableEditing() removed to avoid conflict with PaginationPlus table handling
     ];
   },
 
   addKeyboardShortcuts() {
     return {
       Enter: () => {
-        if (
-          this.editor.state.selection.empty &&
-          this.editor.state.selection.$head.parent.type.name ===
-            "tableParagraph"
-        ) {
-          this.editor.commands.insertContent({ type: "hardBreak" });
-          return true;
+        const { state } = this.editor;
+        const { selection } = state;
+        const { $from } = selection;
+        
+        // Check if we're inside a table cell
+        let isInTableCell = false;
+        for (let depth = $from.depth; depth >= 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+            isInTableCell = true;
+            break;
+          }
+        }
+        
+        if (isInTableCell && selection.empty) {
+          // Allow normal paragraph creation within table cells
+          return this.editor.commands.createParagraphNear();
         }
         return false;
       },
 
       Backspace: () => {
-        const selection = this.editor.state.selection;
-        const selectionIsEmpty = selection.empty;
-        const selectionIsAtStartOfNode = selection.$head.parentOffset === 0;
-        const selectionIsInTableParagraphNode =
-          selection.$head.node().type.name === "tableParagraph";
-
+        const { state } = this.editor;
+        const { selection } = state;
+        const { $from } = selection;
+        
+        // Check if we're inside a table cell and at the start of a block
+        let isInTableCell = false;
+        for (let depth = $from.depth; depth >= 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+            isInTableCell = true;
+            break;
+          }
+        }
+        
+        // Prevent backspace from deleting table structure when at start of cell content
         return (
-          selectionIsEmpty &&
-          selectionIsAtStartOfNode &&
-          selectionIsInTableParagraphNode
+          isInTableCell &&
+          selection.empty &&
+          selection.$head.parentOffset === 0 &&
+          ($from.parent.type.name === "paragraph" || $from.parent.type.name === "tableParagraph")
         );
       },
 
       Tab: () => {
-        // Check if we're in a table cell
-        const { state } = this.editor;
-        const { $from } = state.selection;
+        console.log('🔍 Tab pressed in BlockNoteTableExtension');
         
-        // Find if we're inside a table cell
-        for (let depth = $from.depth; depth > 0; depth--) {
+        const { state } = this.editor;
+        const { selection } = state;
+        const { $from } = selection;
+        
+        console.log('Current selection:', selection);
+        console.log('$from depth:', $from.depth);
+        
+        // Check if we're in a table by looking at parent nodes
+        let isInTable = false;
+        for (let depth = $from.depth; depth >= 0; depth--) {
           const node = $from.node(depth);
+          console.log(`Depth ${depth}: ${node.type.name}`);
+          
           if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
-            // We're in a table, move to next cell
-            return this.editor.commands.command(({ state, dispatch, view }) =>
-              goToNextCell(1)(state, dispatch, view)
-            );
+            console.log('✅ Found table cell at depth:', depth);
+            isInTable = true;
+            break;
+          }
+          
+          if (node.type.name === 'table') {
+            console.log('✅ Found table at depth:', depth);
+            isInTable = true;
+            break;
           }
         }
         
-        // Not in a table, let default Tab behavior happen
+        if (isInTable) {
+          console.log('🚀 Executing goToNextCell(1)');
+          const result = this.editor.commands.command(({ state, dispatch, view }) => {
+            try {
+              return goToNextCell(1)(state, dispatch, view);
+            } catch (error) {
+              console.error('Error in goToNextCell:', error);
+              return false;
+            }
+          });
+          console.log('goToNextCell result:', result);
+          return result;
+        }
+        
+        console.log('❌ Not in table, returning false');
         return false;
       },
 
       "Shift-Tab": () => {
-        // Check if we're in a table cell
-        const { state } = this.editor;
-        const { $from } = state.selection;
+        console.log('🔍 Shift-Tab pressed in BlockNoteTableExtension');
         
-        // Find if we're inside a table cell
-        for (let depth = $from.depth; depth > 0; depth--) {
+        const { state } = this.editor;
+        const { selection } = state;
+        const { $from } = selection;
+        
+        // Check if we're in a table by looking at parent nodes
+        let isInTable = false;
+        for (let depth = $from.depth; depth >= 0; depth--) {
           const node = $from.node(depth);
-          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
-            // We're in a table, move to previous cell
-            return this.editor.commands.command(({ state, dispatch, view }) =>
-              goToNextCell(-1)(state, dispatch, view)
-            );
+          
+          if (node.type.name === 'tableCell' || node.type.name === 'tableHeader' || node.type.name === 'table') {
+            console.log('✅ Found table structure at depth:', depth);
+            isInTable = true;
+            break;
           }
         }
         
-        // Not in a table, let default Shift-Tab behavior happen
+        if (isInTable) {
+          console.log('🚀 Executing goToNextCell(-1)');
+          const result = this.editor.commands.command(({ state, dispatch, view }) => {
+            try {
+              return goToNextCell(-1)(state, dispatch, view);
+            } catch (error) {
+              console.error('Error in goToNextCell:', error);
+              return false;
+            }
+          });
+          console.log('goToNextCell(-1) result:', result);
+          return result;
+        }
+        
+        console.log('❌ Not in table, returning false');
         return false;
       },
     };
