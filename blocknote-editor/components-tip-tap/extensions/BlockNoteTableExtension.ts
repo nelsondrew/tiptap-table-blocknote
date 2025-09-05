@@ -2,7 +2,7 @@ import { Node, Extension, mergeAttributes } from "@tiptap/core";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { Table } from "@tiptap/extension-table";
-import { Fragment, Node as PMNode, Schema } from "prosemirror-model";
+import { Node as PMNode } from "prosemirror-model";
 import {
   TableView,
   columnResizing,
@@ -71,15 +71,9 @@ const BlockNoteTableCell = TableCell.extend({
     return [
       {
         tag: "td",
-        getContent: (node: HTMLElement, schema: Schema) => {
-          // Create a paragraph node with the text content
-          const text = node.textContent || "";
-          if (text) {
-            return Fragment.from(
-              schema.nodes.paragraph.create(null, schema.text(text)),
-            );
-          }
-          return Fragment.from(schema.nodes.paragraph.create());
+        getContent: (node: HTMLElement) => {
+          // Use simple innerHTML instead of Fragment creation for better performance
+          return node.innerHTML || node.textContent || "";
         },
       },
     ];
@@ -94,15 +88,9 @@ const BlockNoteTableHeader = TableHeader.extend({
     return [
       {
         tag: "th",
-        getContent: (node: HTMLElement, schema: Schema) => {
-          // Create a paragraph node with the text content
-          const text = node.textContent || "";
-          if (text) {
-            return Fragment.from(
-              schema.nodes.paragraph.create(null, schema.text(text)),
-            );
-          }
-          return Fragment.from(schema.nodes.paragraph.create());
+        getContent: (node: HTMLElement) => {
+          // Use simple innerHTML instead of Fragment creation for better performance
+          return node.innerHTML || node.textContent || "";
         },
       },
     ];
