@@ -44,7 +44,7 @@ const TableParagraph = Node.create({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
     return ["p", HTMLAttributes, 0];
   },
 });
@@ -58,7 +58,7 @@ const BlockNoteTableRow = Node.create({
     return [{ tag: "tr" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
     return ["tr", mergeAttributes(HTMLAttributes), 0];
   },
 });
@@ -72,8 +72,16 @@ const BlockNoteTableCell = TableCell.extend({
       {
         tag: "td",
         getContent: (node: HTMLElement) => {
+          const startTime = performance.now();
+          console.log("🔍 Processing table cell:", node.tagName);
+          
           // Use simple innerHTML instead of Fragment creation for better performance
-          return node.innerHTML || node.textContent || "";
+          const content = node.innerHTML || node.textContent || "";
+          
+          const endTime = performance.now();
+          console.log(`⏱️ Cell processing took: ${(endTime - startTime).toFixed(2)}ms`);
+          
+          return content;
         },
       },
     ];
@@ -89,8 +97,16 @@ const BlockNoteTableHeader = TableHeader.extend({
       {
         tag: "th",
         getContent: (node: HTMLElement) => {
+          const startTime = performance.now();
+          console.log("🔍 Processing table header:", node.tagName);
+          
           // Use simple innerHTML instead of Fragment creation for better performance
-          return node.innerHTML || node.textContent || "";
+          const content = node.innerHTML || node.textContent || "";
+          
+          const endTime = performance.now();
+          console.log(`⏱️ Header processing took: ${(endTime - startTime).toFixed(2)}ms`);
+          
+          return content;
         },
       },
     ];
@@ -253,15 +269,50 @@ export const BlockNoteTable = Table.extend({
   tableRole: "table",
   isolating: true,
 
+  parseHTML() {
+    return [
+      {
+        tag: "table",
+        priority: 1000,
+        getAttrs: (element: HTMLElement) => {
+          const startTime = performance.now();
+          console.log("🚀 Starting table parsing...");
+          
+          // Count table dimensions
+          const rows = element.querySelectorAll('tr');
+          const cells = element.querySelectorAll('td, th');
+          const totalCells = cells.length;
+          
+          console.log(`📊 Table size detected: ${rows.length} rows, ${totalCells} cells`);
+          
+          if (totalCells > 500) {
+            console.warn(`⚠️ Large table detected! ${totalCells} cells may cause performance issues`);
+          }
+          
+          const endTime = performance.now();
+          console.log(`⏱️ Table size calculation took: ${(endTime - startTime).toFixed(2)}ms`);
+          
+          return {};
+        },
+      },
+    ];
+  },
+
   addNodeView() {
-    return ({ node, HTMLAttributes }) => {
+    return ({ node, HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, any> }) => {
       class BlockNoteTableView extends TableView {
         constructor(
           public node: PMNode,
           public cellMinWidth: number,
           public blockContentHTMLAttributes: Record<string, string>,
         ) {
+          const viewStartTime = performance.now();
+          console.log("🏗️ Creating BlockNoteTableView...");
+          
           super(node, cellMinWidth);
+          
+          const superEndTime = performance.now();
+          console.log(`⏱️ TableView super() took: ${(superEndTime - viewStartTime).toFixed(2)}ms`);
 
           // Create BlockNote-style wrapper structure
           const blockContent = document.createElement("div");
@@ -301,6 +352,9 @@ export const BlockNoteTable = Table.extend({
           tableWrapper.appendChild(floatingContainer);
 
           this.dom = blockContent;
+          
+          const viewEndTime = performance.now();
+          console.log(`⏱️ Total TableView construction took: ${(viewEndTime - viewStartTime).toFixed(2)}ms`);
         }
 
         ignoreMutation(record: MutationRecord): boolean {
@@ -317,7 +371,7 @@ export const BlockNoteTable = Table.extend({
     };
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
     return [
       "div",
       {
