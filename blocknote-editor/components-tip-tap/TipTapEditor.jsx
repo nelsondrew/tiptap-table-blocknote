@@ -125,8 +125,8 @@ import {
 } from 'src/dashboard/components/gridComponents/pagesGridHelpers';
 import { checkContentForTemplatePlaceholders } from 'src/components/PagesComponents/coverTemplateHelpers';
 import { dashboardFooterChanged, dashboardHeaderChanged, dashboardPageNumberChanged } from 'src/dashboard/actions/dashboardLayout'
-import BlockNoteTableExtension from './extensions/BlockNoteTableExtension'
-import { TableTrackerExtension } from './extensions/TableTrackerExtension/TableTrackerExtension'
+import { PaginationTable , TableScrollSyncExtension } from "@/tiptap-table-plus/src";
+
 
 const EditorContainer = styled.div`
   background: ${props => props.$isDarkMode ? '#1A1B1E' : 'transparent'};
@@ -1117,6 +1117,8 @@ export const TipTapEditor = forwardRef(({ editMode, initialContent, component, h
       ];
     },
   });
+  
+  const { TablePlus, TableRowPlus, TableCellPlus, TableHeaderPlus } = PaginationTable;
 
   const editor = useEditor({
     extensions: [
@@ -1124,8 +1126,6 @@ export const TipTapEditor = forwardRef(({ editMode, initialContent, component, h
         heading: false,
         paragraph: false,
       }),
-      ...BlockNoteTableExtension,
-      TableTrackerExtension,
       CustomParagraphExtension,
       UniqueHeadingExtension.configure({
         setHeadings: setHeadings,
@@ -1151,6 +1151,16 @@ export const TipTapEditor = forwardRef(({ editMode, initialContent, component, h
       TaskItem.configure({
         nested: true,
       }),
+      TableScrollSyncExtension,
+      TablePlus.configure({
+        resizable: true,
+        cellMinWidth: 100,
+        handleWidth: 5,
+        lastColumnResizable: true,
+      }),
+      TableRowPlus,
+      TableCellPlus,
+      TableHeaderPlus,
       Hyperlink.configure({
         hyperlinkOnPaste: false,
         openOnClick: true,
