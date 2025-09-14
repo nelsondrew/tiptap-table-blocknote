@@ -545,33 +545,61 @@ export default function BlockNoteEditor({
     <Menu className="six-dot-menu">
       <Menu.Item
         onClick={() => {
-          // Get the current position before deletion
           const currentPos = hoverInfo?.position;
-          
-          // Delete the node
-          editorInstanceRef?.current?.deleteNodeAtPosition(currentPos);
-          
-          // Emit the event
-          newEvent.emit('event-reInitializePageBreak');
-          
-          // Close the menu
-          setShowDragMenu(false);
-          
-          // Set cursor position to stay in the same line after deletion
-          if (editorInstance && currentPos !== undefined) {
-            // Find the next valid position in the same line
-            const doc = editorInstance.state.doc;
-            let targetPos = currentPos;
-            
-            // If we're at the end of the document, move to the previous position
-            if (targetPos >= doc.content.size) {
-              targetPos = Math.max(0, doc.content.size - 1);
+          const nodeType = hoverInfo?.type;
+
+          if (!editorInstance || currentPos === undefined) return;
+
+          // Handle table deletion differently
+          if (nodeType === 'table') {
+            // For tables, delete the entire table structure
+            try {
+              const doc = editorInstance.state.doc;
+              const tableNode = doc.nodeAt(currentPos);
+
+              if (tableNode && tableNode.type.name === 'table') {
+                // Create transaction to replace table with empty paragraph
+                const tr = editorInstance.state.tr;
+                const emptyParagraph = editorInstance.schema.nodes.paragraph.create({
+                  'data-text-color': 'Default',
+                  'data-bg-color': 'Default'
+                });
+
+                tr.replaceWith(currentPos, currentPos + tableNode.nodeSize, emptyParagraph);
+                editorInstance.view.dispatch(tr);
+
+                // Set cursor to the new paragraph
+                setTimeout(() => {
+                  editorInstance.commands.setTextSelection(currentPos + 1);
+                  editorInstance.commands.focus();
+                }, 10);
+              }
+            } catch (error) {
+              console.error('Error deleting table:', error);
+              // Fallback to original method
+              editorInstanceRef?.current?.deleteNodeAtPosition(currentPos);
             }
-            
-            // Set the cursor position
-            editorInstance.commands.setTextSelection(targetPos);
-            editorInstance.commands.focus();
+          } else {
+            // For non-table nodes, use the original delete method
+            editorInstanceRef?.current?.deleteNodeAtPosition(currentPos);
+
+            // Set cursor position after deletion
+            setTimeout(() => {
+              const doc = editorInstance.state.doc;
+              let targetPos = currentPos;
+
+              if (targetPos >= doc.content.size) {
+                targetPos = Math.max(0, doc.content.size - 1);
+              }
+
+              editorInstance.commands.setTextSelection(targetPos);
+              editorInstance.commands.focus();
+            }, 10);
           }
+
+          // Emit the event and close menu
+          newEvent.emit('event-reInitializePageBreak');
+          setShowDragMenu(false);
         }}
         key="delete"
       >
@@ -624,12 +652,31 @@ export default function BlockNoteEditor({
 
       let foundNode = node;
       let depth = $pos.depth;
+      let tableNode = null;
+      let tablePosition = null;
+
       if(node?.type?.name === 'pageBreak' || node?.type?.name === 'footerOnly') {
         setHoverInfo(null);
         return;
       }
+
+      // First, check for table nodes and find the root table
       while (depth > 0) {
         const parentNode = $pos.node(depth);
+
+        // If we find a table node, store it but continue looking for the root table
+        if (parentNode.type.name === "table") {
+          tableNode = parentNode;
+          tablePosition = $pos.start(depth) - 1; // Get table start position
+        }
+
+        // For table-related nodes, prioritize finding the table over individual rows/cells
+        if (parentNode.type.name === "tableRow" || parentNode.type.name === "tableCell" || parentNode.type.name === "tableHeader") {
+          // Continue traversing up to find the table
+          depth--;
+          continue;
+        }
+
         if (
           parentNode.type.name === "chart" ||
           parentNode.type.name === "customVideo" ||
@@ -642,23 +689,45 @@ export default function BlockNoteEditor({
         depth--;
       }
 
+      // If we found a table node, use it instead of row/cell
+      if (tableNode) {
+        foundNode = tableNode;
+        pos.pos = tablePosition;
+      }
+
       if (foundNode) {
-        const coords = editor.view.coordsAtPos(pos.pos);
-        
+        // Get coordinates for the found node position
+        const coordsPos = tableNode ? tablePosition : pos.pos;
+        const coords = editor.view.coordsAtPos(coordsPos);
+
+        // For tables, adjust coordinates to account for wrapper elements
+        let adjustedTop = coords.top - containerRect.top;
+        let adjustedLeft = coords.left - containerRect.left;
+
+        if (tableNode) {
+          // Find the table DOM element and account for wrappers
+          const tableDom = event.target.closest('table');
+          if (tableDom) {
+            const tableRect = tableDom.getBoundingClientRect();
+            adjustedTop = tableRect.top - containerRect.top;
+            adjustedLeft = tableRect.left - containerRect.left;
+          }
+        }
+
         setHoverInfo((prev) => {
+          const newPosition = tableNode ? tablePosition : pos.pos;
           if (
             !prev ||
-            prev.position !== pos.pos ||
+            prev.position !== newPosition ||
             prev.type !== foundNode.type.name ||
-            prev.top !== coords.top - containerRect.top ||
-            prev.left !== coords.left - containerRect.left
+            Math.abs(prev.top - adjustedTop) > 5 || // Add tolerance for stability
+            Math.abs(prev.left - adjustedLeft) > 5
           ) {
             return {
               type: foundNode.type.name,
-              position: pos.pos,
-              top: Math.abs((coords.top - containerRect.top) - prev?.top) <= 3 ? 
-                        prev?.top :(coords.top - containerRect.top),
-              left: coords.left - containerRect.left,
+              position: newPosition,
+              top: adjustedTop,
+              left: adjustedLeft,
               node: foundNode,
             };
           }
