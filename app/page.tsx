@@ -498,7 +498,6 @@ export default function Home() {
       StarterKit,
       ...BlockNoteTableExtensions,
       TableTrackerExtension,
-      // TableHandlesExtension, // Add the table handles extension
       TextStyle,
       FontFamily,
       Color,
