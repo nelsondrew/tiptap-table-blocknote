@@ -58,79 +58,99 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
   tableElement,
   onClose,
 }) => {
-  // Helper to select a cell and execute table command
-  const selectCellAndExecute = (selector: string, command: () => void) => {
-    if (!editor || !tableElement) {
-      console.warn('Editor or table element not available');
-      return;
-    }
-
-    const cell = tableElement.querySelector(selector);
-    if (!cell) {
-      console.warn(`Cell not found with selector: ${selector}`);
+  // Helper to execute table command with proper cell selection
+  const executeTableCommand = (rowIndex: number, colIndex: number, command: () => void) => {
+    if (!editor) {
+      console.warn('Editor not available');
       return;
     }
 
     try {
-      const cellDesc = (cell as any).pmViewDesc;
-      if (!cellDesc || !['tableCell', 'tableHeader'].includes(cellDesc.node.type.name)) {
-        console.warn('Invalid cell selection - no pmViewDesc or wrong node type');
+      // Simple approach: try to execute the command directly first
+      // TipTap commands should work if we're in a table context
+      const success = command();
+
+      if (success !== false) {
+        onClose?.();
         return;
       }
 
-      const cellSelection = CellSelection.create(
-        editor.state.doc,
-        editor.state.doc.resolve(cellDesc.posBefore).pos,
-      );
-      
-      editor.view.dispatch(editor.state.tr.setSelection(cellSelection));
-      command();
-      onClose?.();
+      // Fallback: Find and select the appropriate cell manually
+      let tableNode: any = null;
+      let tablePos = 0;
+
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'table') {
+          tableNode = node;
+          tablePos = pos;
+          return false; // Stop searching
+        }
+      });
+
+      if (!tableNode) {
+        console.warn('Table node not found in document');
+        return;
+      }
+
+      // Find the target cell position
+      let cellPos = -1;
+      let currentPos = tablePos + 1;
+      let currentRowIndex = 0;
+
+      tableNode.forEach((rowNode: any) => {
+        if (rowNode.type.name === 'tableRow' && currentRowIndex === rowIndex) {
+          let currentColIndex = 0;
+          let rowPos = currentPos + 1;
+
+          rowNode.forEach((cellNode: any) => {
+            if (currentColIndex === colIndex) {
+              cellPos = rowPos + 1; // Position inside the cell
+              return false;
+            }
+            currentColIndex++;
+            rowPos += cellNode.nodeSize;
+          });
+          return false;
+        }
+        currentPos += rowNode.nodeSize;
+        currentRowIndex++;
+      });
+
+      if (cellPos > 0) {
+        // Set cursor in the target cell and try command again
+        editor.commands.setTextSelection(cellPos);
+        command();
+        onClose?.();
+      }
     } catch (error) {
       console.error('Error executing table command:', error);
+      // Still try to close the menu
+      onClose?.();
     }
   };
 
   const handleDelete = () => {
     if (orientation === "row") {
-      selectCellAndExecute(
-        `tr:nth-child(${index + 1}) td:first-child, tr:nth-child(${index + 1}) th:first-child`,
-        () => editor.commands.deleteRow()
-      );
+      executeTableCommand(index, 0, () => editor.commands.deleteRow());
     } else {
-      selectCellAndExecute(
-        `tr:first-child td:nth-child(${index + 1}), tr:first-child th:nth-child(${index + 1})`,
-        () => editor.commands.deleteColumn()
-      );
+      executeTableCommand(0, index, () => editor.commands.deleteColumn());
     }
   };
 
   const handleAddAbove = () => {
-    selectCellAndExecute(
-      `tr:nth-child(${index + 1}) td:first-child, tr:nth-child(${index + 1}) th:first-child`,
-      () => editor.commands.addRowBefore()
-    );
+    executeTableCommand(index, 0, () => editor.commands.addRowBefore());
   };
 
   const handleAddBelow = () => {
-    selectCellAndExecute(
-      `tr:nth-child(${index + 1}) td:first-child, tr:nth-child(${index + 1}) th:first-child`,
-      () => editor.commands.addRowAfter()
-    );
+    executeTableCommand(index, 0, () => editor.commands.addRowAfter());
   };
 
   const handleAddLeft = () => {
-    selectCellAndExecute(
-      `tr:first-child td:nth-child(${index + 1}), tr:first-child th:nth-child(${index + 1})`,
-      () => editor.commands.addColumnBefore()
-    );
+    executeTableCommand(0, index, () => editor.commands.addColumnBefore());
   };
 
   const handleAddRight = () => {
-    selectCellAndExecute(
-      `tr:first-child td:nth-child(${index + 1}), tr:first-child th:nth-child(${index + 1})`,
-      () => editor.commands.addColumnAfter()
-    );
+    executeTableCommand(0, index, () => editor.commands.addColumnAfter());
   };
 
   return (

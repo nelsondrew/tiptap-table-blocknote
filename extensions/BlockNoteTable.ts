@@ -68,21 +68,54 @@ const BlockNoteTableRow = Node.create({
       // Apply CSS Grid with fixed 200px columns
       dom.style.display = "grid";
 
-      // Calculate number of columns based on first row cells
-      let columnCount = 0;
-      if (node.content && node.content.childCount > 0) {
-        node.content.forEach((cell) => {
-          const colspan = cell.attrs.colspan || 1;
-          columnCount += colspan;
-        });
-      } else {
-        // Default to 5 columns if no content yet
-        columnCount = 5;
-      }
+      // Function to calculate and update grid columns
+      const updateGridColumns = (currentNode?: any) => {
+        let columnCount = 0;
 
-      // Set grid-template-columns with 200px per column
-      const gridColumns = Array(columnCount).fill('200px').join(' ');
-      dom.style.gridTemplateColumns = gridColumns;
+        // First try to get column count from the table's CSS custom property
+        const table = dom.closest('table');
+        if (table) {
+          const cellCountFromTable = table.style.getPropertyValue('--cell-count');
+          if (cellCountFromTable) {
+            columnCount = parseInt(cellCountFromTable);
+          }
+        }
+
+        // Fallback: calculate from current node
+        if (columnCount === 0 && currentNode) {
+          try {
+            if (currentNode.content && currentNode.content.childCount > 0) {
+              currentNode.content.forEach((cell: any) => {
+                if (cell && cell.attrs) {
+                  const colspan = cell.attrs.colspan || 1;
+                  columnCount += colspan;
+                }
+              });
+            } else if (currentNode.childCount > 0) {
+              // Alternative: use direct childCount
+              columnCount = currentNode.childCount;
+            }
+          } catch (nodeError) {
+            console.warn('Error parsing node structure, using DOM fallback:', nodeError);
+            // DOM fallback: count actual cells in this row
+            const cells = dom.querySelectorAll('td, th');
+            columnCount = cells.length;
+          }
+        }
+
+        // Final fallback
+        if (columnCount === 0) {
+          columnCount = 5;
+        }
+
+        // Set grid-template-columns with 200px per column
+        const gridColumns = Array(columnCount).fill('200px').join(' ');
+        dom.style.gridTemplateColumns = gridColumns;
+        return columnCount;
+      };
+
+      // Initial setup
+      updateGridColumns(node);
 
       // Apply any additional HTML attributes
       Object.entries(HTMLAttributes).forEach(([key, value]) => {
@@ -91,7 +124,29 @@ const BlockNoteTableRow = Node.create({
         }
       });
 
-      return { dom, contentDOM: dom };
+      return {
+        dom,
+        contentDOM: dom,
+        update(updatedNode: any) {
+          if (!updatedNode || updatedNode.type.name !== 'tableRow') return false;
+
+          try {
+            // Recalculate grid columns when row content changes
+            updateGridColumns(updatedNode);
+            return true;
+          } catch (error) {
+            console.error('Error updating table row:', error);
+            // Try to update without node parameter
+            try {
+              updateGridColumns();
+              return true;
+            } catch (fallbackError) {
+              console.error('Error in fallback update:', fallbackError);
+              return false;
+            }
+          }
+        }
+      };
     };
   },
 });
@@ -267,24 +322,63 @@ export const BlockNoteTable = Table.extend({
         dom: blockContent,
         contentDOM: table, // tr elements will be direct children of table (no tbody)
         update(updatedNode: any) {
-          if (updatedNode.type.name !== 'table') return false;
+          if (!updatedNode || updatedNode.type.name !== 'table') return false;
 
-          // Recalculate max cell count
-          let newMaxCellCount = 0;
-          updatedNode.forEach((child: any) => {
-            if (child.type.name === 'tableRow') {
-              if (child.childCount > newMaxCellCount) {
-                newMaxCellCount = child.childCount;
+          try {
+            // Recalculate max cell count
+            let newMaxCellCount = 0;
+
+            // Check if updatedNode has content and forEach method
+            if (updatedNode.content && typeof updatedNode.forEach === 'function') {
+              updatedNode.forEach((child: any) => {
+                if (child && child.type && child.type.name === 'tableRow') {
+                  if (child.childCount > newMaxCellCount) {
+                    newMaxCellCount = child.childCount;
+                  }
+                }
+              });
+            } else if (updatedNode.content && updatedNode.content.content) {
+              // Alternative way to iterate through content
+              const children = updatedNode.content.content;
+              if (Array.isArray(children)) {
+                children.forEach((child: any) => {
+                  if (child && child.type && child.type.name === 'tableRow') {
+                    if (child.childCount > newMaxCellCount) {
+                      newMaxCellCount = child.childCount;
+                    }
+                  }
+                });
               }
             }
-          });
 
-          if (newMaxCellCount !== maxCellCount) {
-            maxCellCount = newMaxCellCount;
-            table.style.setProperty('--cell-count', maxCellCount.toString());
+            // Fallback: calculate from DOM if ProseMirror structure fails
+            if (newMaxCellCount === 0) {
+              const firstRow = table.querySelector('tr');
+              if (firstRow) {
+                newMaxCellCount = firstRow.children.length;
+              }
+            }
+
+            if (newMaxCellCount > 0 && newMaxCellCount !== maxCellCount) {
+              maxCellCount = newMaxCellCount;
+              table.style.setProperty('--cell-count', maxCellCount.toString());
+
+              // Force update all table rows to recalculate their grid columns
+              // Use a more reliable DOM-based approach
+              setTimeout(() => {
+                const allRows = table.querySelectorAll('tr');
+                allRows.forEach((row: HTMLElement) => {
+                  const gridColumns = Array(newMaxCellCount).fill('200px').join(' ');
+                  row.style.gridTemplateColumns = gridColumns;
+                });
+              }, 0);
+            }
+
+            return true;
+          } catch (error) {
+            console.error('Error updating table structure:', error);
+            return false;
           }
-
-          return true;
         },
         ignoreMutation(record: MutationRecord): boolean {
           return (
