@@ -62,12 +62,12 @@ function domCellAround(target: Element) {
     ? {
         type: "cell" as const,
         domNode: currentTarget,
-        tbodyNode: currentTarget.closest("tbody"),
+        tbodyNode: currentTarget.closest("tbody") || currentTarget.closest("table"), // Fallback to table if no tbody
       }
     : {
         type: "wrapper" as const,
         domNode: currentTarget,
-        tbodyNode: currentTarget.querySelector("tbody"),
+        tbodyNode: currentTarget.querySelector("tbody") || currentTarget.querySelector("table"), // Fallback to table if no tbody
       };
 }
 
@@ -141,8 +141,8 @@ class TableTrackerView {
       return;
     }
 
-    // Get table and cell bounding rects
-    const tableRect = target.tbodyNode.getBoundingClientRect();
+    // Calculate table bounds from all tr elements (since table has display: contents)
+    const tableRect = this.calculateTableBounds(target.tbodyNode);
     const cellRect = target.type === "cell" ? target.domNode.getBoundingClientRect() : null;
 
     // Find the table element - try multiple selectors for compatibility
@@ -496,6 +496,62 @@ class TableTrackerView {
     this.emitUpdate();
   };
 
+  private calculateTableBounds(tableContainer: Element): DOMRect {
+    // Get all tr elements within the table container
+    const rows = Array.from(tableContainer.querySelectorAll('tr'));
+
+    if (rows.length === 0) {
+      // Fallback to container bounds if no rows found
+      return tableContainer.getBoundingClientRect();
+    }
+
+    // Calculate combined bounds from all rows
+    let minTop = Infinity;
+    let maxBottom = -Infinity;
+    let minLeft = Infinity;
+    let maxRight = -Infinity;
+
+    rows.forEach(row => {
+      const rect = row.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) { // Only consider visible rows
+        minTop = Math.min(minTop, rect.top);
+        maxBottom = Math.max(maxBottom, rect.bottom);
+        minLeft = Math.min(minLeft, rect.left);
+        maxRight = Math.max(maxRight, rect.right);
+      }
+    });
+
+    // If no visible rows found, fallback to container
+    if (minTop === Infinity) {
+      return tableContainer.getBoundingClientRect();
+    }
+
+    // Create a DOMRect-like object with calculated bounds
+    const width = maxRight - minLeft;
+    const height = maxBottom - minTop;
+
+    return {
+      top: minTop,
+      bottom: maxBottom,
+      left: minLeft,
+      right: maxRight,
+      width: width,
+      height: height,
+      x: minLeft,
+      y: minTop,
+      toJSON: () => ({
+        top: minTop,
+        bottom: maxBottom,
+        left: minLeft,
+        right: maxRight,
+        width: width,
+        height: height,
+        x: minLeft,
+        y: minTop
+      })
+    } as DOMRect;
+  }
+
   private findTableElement(domNode: Element): HTMLElement | null {
     // Try multiple selectors for different table implementations
     const selectors = [
@@ -503,12 +559,12 @@ class TableTrackerView {
       ".tableWrapper",
       "[data-type='table']",
     ];
-    
+
     for (const selector of selectors) {
       const element = domNode.closest(selector) as HTMLElement;
       if (element) return element;
     }
-    
+
     // Fallback: find table and get its wrapper
     const table = domNode.closest("table");
     return table?.closest("div") as HTMLElement || null;
@@ -558,9 +614,13 @@ class TableTrackerView {
   public update() {
     // Update bounding boxes if table is still visible and connected
     if (this.state.show && this.state.tableElement?.isConnected) {
-      const tableBody = this.state.tableElement.querySelector("tbody");
+      const tableBody = this.state.tableElement.querySelector("tbody") || this.state.tableElement.querySelector("table");
+      console.log(tableBody, "table body")
       if (tableBody) {
-        this.state.referencePosTable = tableBody.getBoundingClientRect();
+        // Use calculated bounds from tr elements instead of display: contents table
+        const calculatedRect = this.calculateTableBounds(tableBody);
+        console.log(calculatedRect, "calculated table bounds")
+        this.state.referencePosTable = calculatedRect;
         this.emitUpdate();
       } else {
         this.hideTable();
