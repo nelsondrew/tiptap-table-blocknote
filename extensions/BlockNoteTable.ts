@@ -56,7 +56,43 @@ const BlockNoteTableRow = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["tr", mergeAttributes(HTMLAttributes), 0];
+    return ["tr", mergeAttributes({
+      style: "display: grid; grid-template-columns: 200px 200px 200px 200px 200px;"
+    }, HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ({ node, HTMLAttributes }) => {
+      const dom = document.createElement("tr");
+
+      // Apply CSS Grid with fixed 200px columns
+      dom.style.display = "grid";
+
+      // Calculate number of columns based on first row cells
+      let columnCount = 0;
+      if (node.content && node.content.childCount > 0) {
+        node.content.forEach((cell) => {
+          const colspan = cell.attrs.colspan || 1;
+          columnCount += colspan;
+        });
+      } else {
+        // Default to 5 columns if no content yet
+        columnCount = 5;
+      }
+
+      // Set grid-template-columns with 200px per column
+      const gridColumns = Array(columnCount).fill('200px').join(' ');
+      dom.style.gridTemplateColumns = gridColumns;
+
+      // Apply any additional HTML attributes
+      Object.entries(HTMLAttributes).forEach(([key, value]) => {
+        if (key !== "style") {
+          dom.setAttribute(key, value as string);
+        }
+      });
+
+      return { dom, contentDOM: dom };
+    };
   },
 });
 
@@ -169,92 +205,70 @@ export const BlockNoteTable = Table.extend({
 
   addNodeView() {
     return ({ node, HTMLAttributes }) => {
-      class BlockNoteTableView extends TableView {
-        constructor(
-          public node: PMNode,
-          public cellMinWidth: number,
-          public blockContentHTMLAttributes: Record<string, string>
-        ) {
-          super(node, cellMinWidth);
+      const dom = document.createElement('table');
+      let maxCellCount = 0;
 
-          // Create BlockNote-style wrapper structure
-          const blockContent = document.createElement("div");
-          blockContent.className = "bn-block-content bn-table-block";
-          blockContent.setAttribute("data-content-type", "table");
-          
-          // Apply HTML attributes
-          for (const [attribute, value] of Object.entries(blockContentHTMLAttributes)) {
-            if (attribute !== "class") {
-              blockContent.setAttribute(attribute, value);
+      // Calculate max cell count from table rows
+      node.forEach((child: any) => {
+        if (child.type.name === 'tableRow') {
+          if (child.childCount > maxCellCount) {
+            maxCellCount = child.childCount;
+          }
+        }
+      });
+
+      // Apply table classes and styling
+      dom.className = "bn-table prosemirror-table";
+      dom.style.display = "contents"; // Make table invisible to layout for pagination
+      dom.style.border = "2px solid #e5e7eb";
+      dom.style.borderCollapse = "separate";
+      dom.style.borderSpacing = "0";
+      dom.style.width = "100%";
+      dom.style.backgroundColor = "white";
+
+      // Set CSS custom properties for grid layout
+      dom.style.setProperty('--cell-count', maxCellCount.toString());
+
+      // Apply HTML attributes
+      Object.entries(HTMLAttributes).forEach(([key, value]) => {
+        if (key !== "style" && key !== "class") {
+          dom.setAttribute(key, value as string);
+        }
+      });
+
+      return {
+        dom,
+        contentDOM: dom, // tr elements will be direct children of table
+        update(updatedNode: any) {
+          if (updatedNode.type.name !== 'table') return false;
+
+          // Recalculate max cell count
+          let newMaxCellCount = 0;
+          updatedNode.forEach((child: any) => {
+            if (child.type.name === 'tableRow') {
+              if (child.childCount > newMaxCellCount) {
+                newMaxCellCount = child.childCount;
+              }
             }
+          });
+
+          if (newMaxCellCount !== maxCellCount) {
+            maxCellCount = newMaxCellCount;
+            dom.style.setProperty('--cell-count', maxCellCount.toString());
           }
 
-          const tableWrapper = this.dom;
-          
-          // Create inner wrapper for better styling control
-          const tableWrapperInner = document.createElement("div");
-          tableWrapperInner.className = "tableWrapper-inner";
-          
-          // Get the actual table element and add proper classes
-          const table = tableWrapper.querySelector('table');
-          if (table) {
-            table.className = "bn-table prosemirror-table";
-            // Add border styling directly
-            table.style.border = "2px solid #e5e7eb";
-            table.style.borderCollapse = "separate";
-            table.style.borderSpacing = "0";
-            table.style.width = "100%";
-            table.style.backgroundColor = "white";
-          }
-          
-          tableWrapperInner.appendChild(tableWrapper.firstChild!);
-          tableWrapper.appendChild(tableWrapperInner);
-          blockContent.appendChild(tableWrapper);
-
-          // Add floating container for widgets (like resize handles)
-          const floatingContainer = document.createElement("div");
-          floatingContainer.className = "table-widgets-container";
-          floatingContainer.style.position = "relative";
-          tableWrapper.appendChild(floatingContainer);
-
-          this.dom = blockContent;
+          return true;
         }
-
-        ignoreMutation(record: MutationRecord): boolean {
-          return (
-            !(record.target as HTMLElement).closest(".tableWrapper-inner") ||
-            super.ignoreMutation(record)
-          );
-        }
-      }
-
-      return new BlockNoteTableView(node, EMPTY_CELL_WIDTH, {
-        ...HTMLAttributes,
-      }) as NodeView;
+      };
     };
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      "div",
-      {
-        class: "bn-block-content bn-table-block",
-        "data-content-type": "table",
-        ...HTMLAttributes,
-      },
-      [
-        "div",
-        { class: "tableWrapper" },
-        [
-          "div", 
-          { class: "tableWrapper-inner" },
-          ["table", { 
-            class: "bn-table prosemirror-table",
-            style: "border: 2px solid #e5e7eb; border-radius: 8px; border-collapse: separate; border-spacing: 0; width: 100%; background-color: white;"
-          }, 0]
-        ]
-      ]
-    ];
+    return ["table", {
+      class: "bn-table prosemirror-table",
+      style: "display: contents; border: 2px solid #e5e7eb; border-collapse: separate; border-spacing: 0; width: 100%; background-color: white;",
+      ...HTMLAttributes
+    }, 0]; // Direct table element with tr children, no tbody
   },
 });
 

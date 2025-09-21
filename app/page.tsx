@@ -15,6 +15,7 @@ import TaskItem from '@tiptap/extension-task-item'
 import { useCallback, useState, useEffect } from 'react'
 import BlockNoteTableExtensions from '../extensions/BlockNoteTable'
 import TableHandlesExtension from "../app/extensions/TableHandlesPlugin"
+import { PaginationPlus } from '../Changes/PaginationPlus'
 import styled from '@emotion/styled'
 import { css, Global } from '@emotion/react'
 import GlobalStyles from "./GlobalStyles";
@@ -480,6 +481,22 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         Redo
       </MenuButton>
+
+      {/* Pagination Controls */}
+      <MenuButton
+        onClick={() => {
+          const editorDom = editor.view.dom;
+          const hasPagination = editorDom.classList.contains('rm-with-pagination');
+          if (hasPagination) {
+            editorDom.classList.remove('rm-with-pagination');
+          } else {
+            editorDom.classList.add('rm-with-pagination');
+          }
+        }}
+        isActive={editor?.view?.dom?.classList?.contains('rm-with-pagination')}
+      >
+        Toggle Pagination
+      </MenuButton>
     </MenuBarContainer>
   )
 }
@@ -498,6 +515,24 @@ export default function Home() {
       StarterKit,
       ...BlockNoteTableExtensions,
       TableTrackerExtension,
+      PaginationPlus.configure({
+        pageHeight: 800,
+        pageGap: 50,
+        pageGapBorderSize: 1,
+        pageBreakBackground: "#000000",
+        pageHeaderHeight: 30,
+        pageFooterHeight: 30,
+        footerRight: "Page {page}",
+        footerLeft: "",
+        headerRight: "",
+        headerLeft: "",
+        marginTop: 20,
+        marginBottom: 20,
+        marginLeft: 50,
+        marginRight: 50,
+        contentMarginTop: 10,
+        contentMarginBottom: 10,
+      }),
       TextStyle,
       FontFamily,
       Color,
@@ -514,26 +549,61 @@ export default function Home() {
       }),
     ],
     content: `
-      <h2>Welcome to BlockNote-inspired Tiptap Editor! 🎉</h2>
-      <p>This editor now includes BlockNote's advanced table implementation with Table Handles support.</p>
-      <h3>BlockNote Table Features:</h3>
+      <h2>Welcome to BlockNote-inspired Tiptap Editor with Pagination! 🎉</h2>
+      <p>This editor now includes BlockNote's advanced table implementation with PaginationPlus support.</p>
+
+      <h3>New Features:</h3>
       <ul>
-        <li>Block-based table architecture</li>
-        <li>Enhanced keyboard navigation (Tab/Shift-Tab)</li>
-        <li>Column resizing capabilities</li>
-        <li>Improved cell content handling</li>
-        <li>Better DOM structure for styling</li>
-        <li>Minimum table width of 360px like BlockNote</li>
-        <li>Table handles for drag and drop</li>
-        <li>Context menus for table operations</li>
+        <li>✅ BlockNote-style table architecture with display: contents</li>
+        <li>✅ CSS Grid conversion for table rows</li>
+        <li>✅ PaginationPlus integration</li>
+        <li>✅ Table pagination compatibility</li>
+        <li>✅ Word-break styling for cells</li>
       </ul>
-      <h3>Try the task list:</h3>
-      <ul data-type="taskList">
-        <li data-type="taskItem" data-checked="false">Create a table</li>
-        <li data-type="taskItem" data-checked="false">Test table handles</li>
-        <li data-type="taskItem" data-checked="false">Test drag and drop</li>
-        <li data-type="taskItem" data-checked="false">Implement table handles extension</li>
-      </ul>
+
+      <h3>Testing Instructions:</h3>
+      <ol>
+        <li>Click "Add BlockNote Table" to create a table</li>
+        <li>Click "Toggle Pagination" to enable pagination view</li>
+        <li>Add content to see how tables work with pagination</li>
+        <li>Test table operations with pagination enabled</li>
+      </ol>
+
+      <h3>Sample Table for Testing:</h3>
+      <table>
+        <tbody>
+          <tr>
+            <th>Feature</th>
+            <th>Status</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>Display Contents</td>
+            <td>✅ Complete</td>
+            <td>All table wrappers use display: contents for pagination compatibility</td>
+          </tr>
+          <tr>
+            <td>CSS Grid Rows</td>
+            <td>✅ Complete</td>
+            <td>Table rows converted to CSS Grid for flexible layout</td>
+          </tr>
+          <tr>
+            <td>Word Break</td>
+            <td>✅ Complete</td>
+            <td>Cells use word-break: break-all to prevent overflow</td>
+          </tr>
+          <tr>
+            <td>Pagination Integration</td>
+            <td>🔄 Testing</td>
+            <td>PaginationPlus now integrated and ready for testing</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>This is additional content to test pagination. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+
+      <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
       <blockquote>
         <p>"The best way to get started is to quit talking and begin doing." - Walt Disney</p>
       </blockquote>

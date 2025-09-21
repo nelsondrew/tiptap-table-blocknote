@@ -21,107 +21,6 @@ export interface PaginationPlusOptions {
   contentMarginBottom: number;
 }
 const page_count_meta_key = "PAGE_COUNT_META_KEY";
-// Function to update table row scrollbars for a specific table
-const updateTableRowScrollbarsForTable = (tableId?: string) => {
-  const breakers = document.querySelectorAll('.breaker');
-  let tableRowWrappers: NodeListOf<Element>;
-
-  if (tableId) {
-    // Only get wrappers for the specific table (dataset.tableId creates data-table-id attribute)
-    const targetTable = document.querySelector(`table[data-table-id="${tableId}"]`);
-    if (!targetTable) {
-      console.warn(`Table with ID ${tableId} not found`);
-      return;
-    }
-    tableRowWrappers = targetTable.querySelectorAll('.table-row-wrapper');
-  } else {
-    // Fallback to all wrappers if no tableId specified
-    tableRowWrappers = document.querySelectorAll('.table-row-wrapper');
-  }
-
-  if (tableRowWrappers.length === 0) return;
-
-  // Group table row wrappers by their parent table
-  const tableGroups: { [key: string]: HTMLElement[] } = {};
-
-  tableRowWrappers.forEach((wrapper) => {
-    const wrapperElement = wrapper as HTMLElement;
-    const parentTable = wrapperElement.closest('table');
-
-    if (parentTable) {
-      const currentTableId = parentTable.dataset.tableId || 'default';
-      if (!tableGroups[currentTableId]) {
-        tableGroups[currentTableId] = [];
-      }
-      tableGroups[currentTableId].push(wrapperElement);
-    }
-  });
-
-  // Process each table group
-  Object.values(tableGroups).forEach((tableWrappers) => {
-    tableWrappers.forEach((wrapperElement, index) => {
-      const isLastRow = index === tableWrappers.length - 1;
-      const currentRowRect = wrapperElement.getBoundingClientRect();
-      
-      let isBottomRowBeforePageBreak = false;
-      
-      if (isLastRow) {
-        // Last row of table always gets scrollbar
-        isBottomRowBeforePageBreak = true;
-      } else if (breakers.length > 0) {
-        // Get the next table row
-        const nextRow = tableWrappers[index + 1];
-        if (nextRow) {
-          const nextRowRect = nextRow.getBoundingClientRect();
-          
-          // Find the closest page break below current row
-          let closestPageBreakDistance = Infinity;
-          breakers.forEach((breaker) => {
-            const breakerRect = breaker.getBoundingClientRect();
-            // Only consider page breaks that are below current row
-            if (breakerRect.top > currentRowRect.bottom) {
-              const distance = breakerRect.top - currentRowRect.bottom;
-              if (distance < closestPageBreakDistance) {
-                closestPageBreakDistance = distance;
-              }
-            }
-          });
-          
-          // Calculate distance to next row
-          const distanceToNextRow = nextRowRect.top - currentRowRect.bottom;
-          
-          // If page break is closer than next row, this is bottom row before page break
-          if (closestPageBreakDistance < distanceToNextRow) {
-            isBottomRowBeforePageBreak = true;
-          }
-        }
-      }
-      
-      // Apply scrollbar based on logic
-      if (isBottomRowBeforePageBreak) {
-        wrapperElement.classList.add('show-scrollbar');
-        wrapperElement.classList.remove('hide-scrollbar');
-        
-        if (isLastRow) {
-          wrapperElement.setAttribute('data-last-table-row', 'true');
-        } else {
-          wrapperElement.setAttribute('data-before-page-break', 'true');
-        }
-      } else {
-        wrapperElement.classList.add('hide-scrollbar');
-        wrapperElement.classList.remove('show-scrollbar');
-        wrapperElement.removeAttribute('data-last-table-row');
-        wrapperElement.removeAttribute('data-before-page-break');
-      }
-    });
-  });
-};
-
-// Make the table-specific function globally available for table updates (only in browser)
-if (typeof window !== 'undefined') {
-  (window as any).updateTableRowScrollbarsForTable = updateTableRowScrollbarsForTable;
-}
-
 export const PaginationPlus = Extension.create<PaginationPlusOptions>({
   name: "PaginationPlus",
   addOptions() {
@@ -144,21 +43,12 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
       contentMarginBottom: 10,
     };
   },
-
-  onUpdate({ editor, transaction }) {
-    // Only update on actual content changes, not selection or other state changes
-    if (transaction.docChanged) {
-      // Use the debounced function to refresh pagination
-      if ((this as any).debouncedRefreshPage) {
-        (this as any).debouncedRefreshPage();
-      }
-    }
-  },
   onCreate() {
     const targetNode = this.editor.view.dom;
     targetNode.classList.add("rm-with-pagination");
     targetNode.style.marginLeft = this.options.marginLeft + "px";
     targetNode.style.marginRight = this.options.marginRight + "px";
+    const config = { attributes: true };
     const headerFooterHeight = this.options.pageHeaderHeight + this.options.pageFooterHeight;
     const _pageContentHeight = this.options.pageHeight - headerFooterHeight - this.options.contentMarginTop - this.options.contentMarginBottom - this.options.marginTop - this.options.marginBottom;
 
@@ -197,13 +87,6 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
         display: grid;
         min-width: 100%;
       }
-      .rm-with-pagination .table-row-wrapper {
-        display: block;
-        overflow-x: auto;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-      }
       .rm-with-pagination table {
         border-collapse: collapse;
         width: 100%;
@@ -214,9 +97,7 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
         max-height: 300px;
         overflow-y: auto;
       }
-      .rm-with-pagination table tbody > tr{
-        display: table-row !important;
-      }
+     
       .rm-with-pagination p:has(br.ProseMirror-trailingBreak:only-child) {
         display: table;
         width: 100%;
@@ -264,7 +145,6 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
     document.head.appendChild(style);
 
     const refreshPage = (targetNode: HTMLElement) => {
-      console.log("Recalculating page breaks")
       const paginationElement = targetNode.querySelector(
         "[data-rm-pagination]"
       );
@@ -277,53 +157,35 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
             lastPageBreak.offsetTop + lastPageBreak.offsetHeight;
           targetNode.style.minHeight = `${minHeight}px`;
         }
-        
-        // Update table row scrollbar states based on page break proximity
-        updateTableRowScrollbarsForTable(); // No tableId = update all tables
       }
     };
 
-    (window as any).refreshPage = refreshPage;
+    const callback = (
+      mutationList: MutationRecord[]
+    ) => {
+      if (mutationList.length > 0 && mutationList[0].target) {
+        const _target = mutationList[0].target as HTMLElement;
+        if (_target.classList.contains("rm-with-pagination")) {
+          const currentPageCount = getExistingPageCount(this.editor.view);
+          const pageCount = calculatePageCount(this.editor.view, this.options);
+          if (currentPageCount !== pageCount) {
+            
+               const tr = this.editor.view.state.tr.setMeta(
+                 page_count_meta_key,
+                 Date.now()
+               );
+               this.editor.view.dispatch(tr);
+          }
 
-    // Debounced function to refresh page when content changes
-    let refreshPageTimer: NodeJS.Timeout | null = null;
-    const debouncedRefreshPage = () => {
-      console.log("Triggered calculate refresh page")
-      if (refreshPageTimer) {
-        clearTimeout(refreshPageTimer);
-      }
-      refreshPageTimer = setTimeout(() => {
-        // Check if page count changed and update if needed
-        const currentPageCount = getExistingPageCount(this.editor.view);
-        const pageCount = calculatePageCount(this.editor.view, this.options);
-        if (currentPageCount !== pageCount) {
-          const tr = this.editor.view.state.tr.setMeta(
-            page_count_meta_key,
-            Date.now()
-          );
-          this.editor.view.dispatch(tr);
+          refreshPage(_target);
         }
-
-        refreshPage(targetNode);
-      }, 300); // 300ms debounce
+      }
     };
-
-    // Store the debounced function for cleanup
-    (this as any).debouncedRefreshPage = debouncedRefreshPage;
-    (this as any).refreshPageTimer = refreshPageTimer;
-
-    // Initial call to set up pagination
+    const observer = new MutationObserver(callback);
+    observer.observe(targetNode, config);
     refreshPage(targetNode);
   },
-
-  onDestroy() {
-    // Clean up the refresh page timer
-    if ((this as any).refreshPageTimer) {
-      clearTimeout((this as any).refreshPageTimer);
-    }
-  },
   addProseMirrorPlugins() {
-
     const pageOptions = this.options;
     const editor = this.editor;
     return [
@@ -340,12 +202,6 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
             const currentPageCount = getExistingPageCount(editor.view);
             if ((pageCount > 1 ? pageCount : 1) !== currentPageCount) {
               const widgetList = createDecoration(newState, pageOptions);
-              
-              // Update table row scrollbars after page breaks change
-              setTimeout(() => {
-                updateTableRowScrollbarsForTable(); // No tableId = update all tables
-              }, 100);
-              
               return DecorationSet.create(newState.doc, [...widgetList]);
             }
             return oldDeco;
@@ -363,7 +219,6 @@ export const PaginationPlus = Extension.create<PaginationPlusOptions>({
 });
 
 const getExistingPageCount = (view: EditorView) => {
-
   const editorDom = view.dom;
   const paginationElement = editorDom.querySelector("[data-rm-pagination]");
   if (paginationElement) {
@@ -424,7 +279,6 @@ function createDecoration(
   const pageWidget = Decoration.widget(
     0,
     (view) => {
-
       const _pageGap = pageOptions.pageGap;
       const _pageHeaderHeight = (pageOptions.pageHeaderHeight + pageOptions.contentMarginTop + pageOptions.marginTop);
       const _pageFooterHeight = (pageOptions.pageFooterHeight + pageOptions.contentMarginBottom + pageOptions.marginBottom);
