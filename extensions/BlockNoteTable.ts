@@ -205,7 +205,6 @@ export const BlockNoteTable = Table.extend({
 
   addNodeView() {
     return ({ node, HTMLAttributes }) => {
-      const dom = document.createElement('table');
       let maxCellCount = 0;
 
       // Calculate max cell count from table rows
@@ -217,28 +216,56 @@ export const BlockNoteTable = Table.extend({
         }
       });
 
-      // Apply table classes and styling
-      dom.className = "bn-table prosemirror-table";
-      dom.style.display = "contents"; // Make table invisible to layout for pagination
-      dom.style.border = "2px solid #e5e7eb";
-      dom.style.borderCollapse = "separate";
-      dom.style.borderSpacing = "0";
-      dom.style.width = "100%";
-      dom.style.backgroundColor = "white";
+      // Create BlockNote-style wrapper structure with display: contents
+      const blockContent = document.createElement("div");
+      blockContent.className = "bn-block-content bn-table-block";
+      blockContent.setAttribute("data-content-type", "table");
+      blockContent.style.display = "contents"; // Make wrapper invisible to layout
 
-      // Set CSS custom properties for grid layout
-      dom.style.setProperty('--cell-count', maxCellCount.toString());
-
-      // Apply HTML attributes
+      // Apply HTML attributes to blockContent
       Object.entries(HTMLAttributes).forEach(([key, value]) => {
-        if (key !== "style" && key !== "class") {
-          dom.setAttribute(key, value as string);
+        if (key !== "class") {
+          blockContent.setAttribute(key, value as string);
         }
       });
 
+      // Create tableWrapper with display: contents
+      const tableWrapper = document.createElement("div");
+      tableWrapper.className = "tableWrapper";
+      tableWrapper.style.display = "contents";
+
+      // Create tableWrapper-inner with display: contents
+      const tableWrapperInner = document.createElement("div");
+      tableWrapperInner.className = "tableWrapper-inner";
+      tableWrapperInner.style.display = "contents";
+
+      // Create table element (no tbody - tr will be direct children)
+      const table = document.createElement('table');
+      table.className = "bn-table prosemirror-table";
+      table.style.display = "contents"; // Make table invisible to layout for pagination
+      table.style.border = "2px solid #e5e7eb";
+      table.style.borderCollapse = "separate";
+      table.style.borderSpacing = "0";
+      table.style.width = "100%";
+      table.style.backgroundColor = "white";
+
+      // Set CSS custom properties for grid layout
+      table.style.setProperty('--cell-count', maxCellCount.toString());
+
+      // Create floating container for widgets (table tracker needs this)
+      const floatingContainer = document.createElement("div");
+      floatingContainer.className = "table-widgets-container";
+      floatingContainer.style.position = "relative";
+
+      // Assemble the structure
+      tableWrapperInner.appendChild(table);
+      tableWrapper.appendChild(tableWrapperInner);
+      tableWrapper.appendChild(floatingContainer);
+      blockContent.appendChild(tableWrapper);
+
       return {
-        dom,
-        contentDOM: dom, // tr elements will be direct children of table
+        dom: blockContent,
+        contentDOM: table, // tr elements will be direct children of table (no tbody)
         update(updatedNode: any) {
           if (updatedNode.type.name !== 'table') return false;
 
@@ -254,21 +281,56 @@ export const BlockNoteTable = Table.extend({
 
           if (newMaxCellCount !== maxCellCount) {
             maxCellCount = newMaxCellCount;
-            dom.style.setProperty('--cell-count', maxCellCount.toString());
+            table.style.setProperty('--cell-count', maxCellCount.toString());
           }
 
           return true;
+        },
+        ignoreMutation(record: MutationRecord): boolean {
+          return (
+            !(record.target as HTMLElement).closest(".tableWrapper-inner") ||
+            record.type === 'attributes'
+          );
         }
       };
     };
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["table", {
-      class: "bn-table prosemirror-table",
-      style: "display: contents; border: 2px solid #e5e7eb; border-collapse: separate; border-spacing: 0; width: 100%; background-color: white;",
-      ...HTMLAttributes
-    }, 0]; // Direct table element with tr children, no tbody
+    return [
+      "div",
+      {
+        class: "bn-block-content bn-table-block",
+        "data-content-type": "table",
+        style: "display: contents;", // Make wrapper invisible to layout for pagination
+        ...HTMLAttributes,
+      },
+      [
+        "div",
+        {
+          class: "tableWrapper",
+          style: "display: contents;" // Make wrapper invisible to layout for pagination
+        },
+        [
+          "div",
+          {
+            class: "tableWrapper-inner",
+            style: "display: contents;" // Make wrapper invisible to layout for pagination
+          },
+          ["table", {
+            class: "bn-table prosemirror-table",
+            style: "display: contents; border: 2px solid #e5e7eb; border-collapse: separate; border-spacing: 0; width: 100%; background-color: white;" // Make table invisible to layout for pagination
+          }, 0], // Direct table with tr children, no tbody
+          [
+            "div",
+            {
+              class: "table-widgets-container",
+              style: "position: relative;"
+            }
+          ]
+        ]
+      ]
+    ];
   },
 });
 
