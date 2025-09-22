@@ -58,24 +58,40 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
   tableElement,
   onClose,
 }) => {
-  // Helper to execute table command with proper cell selection
+  // console.log('[TABLE-MENU] TableHandleMenu initialized:', {\n    orientation,\n    index,\n    hasTableElement: !!tableElement,\n    hasEditor: !!editor\n  });\n\n  // Helper to execute table command with proper cell selection
   const executeTableCommand = (rowIndex: number, colIndex: number, command: () => void) => {
+    console.log(`[TABLE-COMMAND] Executing command for ${orientation} at index ${index}:`, {rowIndex, colIndex, orientation});
+
     if (!editor) {
-      console.warn('Editor not available');
+      console.warn('[TABLE-COMMAND] Editor not available');
       return;
     }
 
     try {
+      // Check current selection state
+      const currentSelection = editor.state.selection;
+      console.log('[TABLE-COMMAND] Current selection:', {
+        type: currentSelection.constructor.name,
+        from: currentSelection.from,
+        to: currentSelection.to,
+        anchor: currentSelection.anchor,
+        head: currentSelection.head
+      });
+
       // Simple approach: try to execute the command directly first
       // TipTap commands should work if we're in a table context
+      console.log('[TABLE-COMMAND] Attempting direct command execution');
       const success = command();
+      console.log('[TABLE-COMMAND] Direct command result:', success);
 
       if (success !== false) {
+        console.log('[TABLE-COMMAND] Direct command succeeded, closing menu');
         onClose?.();
         return;
       }
 
       // Fallback: Find and select the appropriate cell manually
+      console.log('[TABLE-COMMAND] Direct command failed, trying manual cell selection');
       let tableNode: any = null;
       let tablePos = 0;
 
@@ -83,47 +99,94 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
         if (node.type.name === 'table') {
           tableNode = node;
           tablePos = pos;
-          return false; // Stop searching
+          console.log('[TABLE-COMMAND] Found table node at position:', pos);
+          return false as any; // Stop searching
         }
       });
 
       if (!tableNode) {
-        console.warn('Table node not found in document');
+        console.warn('[TABLE-COMMAND] Table node not found in document');
         return;
       }
+
+      console.log('[TABLE-COMMAND] Table structure analysis:', {
+        tableNodeSize: tableNode.nodeSize,
+        childCount: tableNode.childCount,
+        targetRowIndex: rowIndex,
+        targetColIndex: colIndex
+      });
 
       // Find the target cell position
       let cellPos = -1;
       let currentPos = tablePos + 1;
       let currentRowIndex = 0;
 
+      console.log('[TABLE-COMMAND] Starting cell position search');
       tableNode.forEach((rowNode: any) => {
+        console.log(`[TABLE-COMMAND] Processing row ${currentRowIndex}:`, {
+          rowType: rowNode.type.name,
+          isTargetRow: currentRowIndex === rowIndex,
+          cellCount: rowNode.childCount
+        });
+
         if (rowNode.type.name === 'tableRow' && currentRowIndex === rowIndex) {
           let currentColIndex = 0;
           let rowPos = currentPos + 1;
 
+          console.log('[TABLE-COMMAND] Found target row, searching for target column');
           rowNode.forEach((cellNode: any) => {
+            console.log(`[TABLE-COMMAND] Processing cell ${currentColIndex}:`, {
+              cellType: cellNode.type.name,
+              isTargetCell: currentColIndex === colIndex,
+              cellNodeSize: cellNode.nodeSize,
+              cellPosition: rowPos
+            });
+
             if (currentColIndex === colIndex) {
               cellPos = rowPos + 1; // Position inside the cell
-              return false;
+              console.log('[TABLE-COMMAND] Found target cell at position:', cellPos);
+              console.log('[TABLE-COMMAND] STOPPING SEARCH - Found target cell in first matching row');
+              return false as any;
             }
             currentColIndex++;
             rowPos += cellNode.nodeSize;
           });
-          return false;
+
+          // IMPORTANT: Stop processing rows after finding the first matching row
+          if (cellPos > 0) {
+            console.log('[TABLE-COMMAND] STOPPING ROW ITERATION - Target cell found');
+            return false as any;
+          }
         }
         currentPos += rowNode.nodeSize;
         currentRowIndex++;
       });
 
       if (cellPos > 0) {
+        console.log('[TABLE-COMMAND] Setting text selection to position:', cellPos);
         // Set cursor in the target cell and try command again
         editor.commands.setTextSelection(cellPos);
-        command();
+
+        // Log the new selection state
+        const newSelection = editor.state.selection;
+        console.log('[TABLE-COMMAND] New selection after setTextSelection:', {
+          type: newSelection.constructor.name,
+          from: newSelection.from,
+          to: newSelection.to,
+          anchor: newSelection.anchor,
+          head: newSelection.head
+        });
+
+        console.log('[TABLE-COMMAND] Selection set, re-attempting command');
+        const retryResult = command();
+        console.log('[TABLE-COMMAND] Retry command result:', retryResult);
         onClose?.();
+      } else {
+        console.warn('[TABLE-COMMAND] Could not find target cell position');
       }
     } catch (error) {
-      console.error('Error executing table command:', error);
+      console.error('[TABLE-COMMAND] Error executing table command:', error);
+      console.error('[TABLE-COMMAND] Error stack:', (error as Error).stack);
       // Still try to close the menu
       onClose?.();
     }
@@ -146,11 +209,216 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
   };
 
   const handleAddLeft = () => {
-    executeTableCommand(0, index, () => editor.commands.addColumnBefore());
+    console.log(`[COLUMN-ADD] Adding column BEFORE index ${index}`);
+
+    // Log table structure before operation
+    if (tableElement) {
+      const rows = tableElement.querySelectorAll('tr');
+      console.log('[COLUMN-ADD] Table structure before addColumnBefore:', {
+        totalRows: rows.length,
+        firstRowCells: rows[0]?.children.length || 0,
+        targetIndex: index
+      });
+    }
+
+    // Direct table manipulation using ProseMirror transactions
+    const result = editor.chain().focus().command(({ tr, dispatch, state }) => {
+      console.log('[COLUMN-ADD] Direct table manipulation for addColumnBefore at index:', index);
+
+      try {
+        // Find the table node in the document
+        let tableNode: any = null;
+        let tablePos = 0;
+
+        state.doc.descendants((node, pos) => {
+          if (node.type.name === 'table') {
+            tableNode = node;
+            tablePos = pos;
+            return false as any;
+          }
+        });
+
+        if (!tableNode) {
+          console.warn('[COLUMN-ADD] No table found in document');
+          return false;
+        }
+
+        console.log('[COLUMN-ADD] Found table node at position:', tablePos);
+
+        // Create new table structure by adding column at specific index
+        const newRows: any[] = [];
+
+        tableNode.forEach((rowNode: any) => {
+          if (rowNode.type.name === 'tableRow') {
+            const newCells: any[] = [];
+            let cellIndex = 0;
+
+            // Copy existing cells, inserting new cell at target index
+            rowNode.forEach((cellNode: any) => {
+              // If we've reached the target index, insert new cell first
+              if (cellIndex === index) {
+                const newCell = cellNode.type.create(
+                  cellNode.attrs,
+                  state.schema.nodes.tableParagraph.create()
+                );
+                newCells.push(newCell);
+              }
+
+              // Add the original cell
+              newCells.push(cellNode);
+              cellIndex++;
+            });
+
+            // If target index is at the end, add new cell at the end
+            if (index >= rowNode.childCount) {
+              const firstCell = rowNode.firstChild;
+              if (firstCell) {
+                const newCell = firstCell.type.create(
+                  firstCell.attrs,
+                  state.schema.nodes.tableParagraph.create()
+                );
+                newCells.push(newCell);
+              }
+            }
+
+            const newRow = rowNode.type.create(rowNode.attrs, newCells);
+            newRows.push(newRow);
+          }
+        });
+
+        const newTable = tableNode.type.create(tableNode.attrs, newRows);
+        tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
+
+        console.log('[COLUMN-ADD] Transaction created for column insertion');
+        return true;
+      } catch (error) {
+        console.error('[COLUMN-ADD] Error in direct table manipulation:', error);
+        return false;
+      }
+    }).run();
+
+    console.log('[COLUMN-ADD] Direct manipulation result:', result);
+
+    // Log table structure after operation
+    setTimeout(() => {
+      if (tableElement) {
+        const rows = tableElement.querySelectorAll('tr');
+        console.log('[COLUMN-ADD] Table structure after addColumnBefore:', {
+          totalRows: rows.length,
+          firstRowCells: rows[0]?.children.length || 0
+        });
+      }
+    }, 100);
+
+    onClose?.();
   };
 
   const handleAddRight = () => {
-    executeTableCommand(0, index, () => editor.commands.addColumnAfter());
+    const insertIndex = index + 1; // Insert after the current index
+    console.log(`[COLUMN-ADD] Adding column AFTER index ${index} (inserting at ${insertIndex})`);
+
+    // Log table structure before operation
+    if (tableElement) {
+      const rows = tableElement.querySelectorAll('tr');
+      console.log('[COLUMN-ADD] Table structure before addColumnAfter:', {
+        totalRows: rows.length,
+        firstRowCells: rows[0]?.children.length || 0,
+        targetIndex: index,
+        insertIndex
+      });
+    }
+
+    // Direct table manipulation using ProseMirror transactions
+    const result = editor.chain().focus().command(({ tr, dispatch, state }) => {
+      console.log('[COLUMN-ADD] Direct table manipulation for addColumnAfter at insert index:', insertIndex);
+
+      try {
+        // Find the table node in the document
+        let tableNode: any = null;
+        let tablePos = 0;
+
+        state.doc.descendants((node, pos) => {
+          if (node.type.name === 'table') {
+            tableNode = node;
+            tablePos = pos;
+            return false as any;
+          }
+        });
+
+        if (!tableNode) {
+          console.warn('[COLUMN-ADD] No table found in document');
+          return false;
+        }
+
+        console.log('[COLUMN-ADD] Found table node at position:', tablePos);
+
+        // Create new table structure by adding column at specific index
+        const newRows: any[] = [];
+
+        tableNode.forEach((rowNode: any) => {
+          if (rowNode.type.name === 'tableRow') {
+            const newCells: any[] = [];
+            let cellIndex = 0;
+
+            // Copy existing cells, inserting new cell at target index
+            rowNode.forEach((cellNode: any) => {
+              // Add the original cell first
+              newCells.push(cellNode);
+
+              // If we've just added the cell at the target index, insert new cell after it
+              if (cellIndex === index) {
+                const newCell = cellNode.type.create(
+                  cellNode.attrs,
+                  state.schema.nodes.tableParagraph.create()
+                );
+                newCells.push(newCell);
+              }
+
+              cellIndex++;
+            });
+
+            // If target index is at or beyond the end, add new cell at the end
+            if (insertIndex >= rowNode.childCount) {
+              const lastCell = rowNode.lastChild;
+              if (lastCell) {
+                const newCell = lastCell.type.create(
+                  lastCell.attrs,
+                  state.schema.nodes.tableParagraph.create()
+                );
+                newCells.push(newCell);
+              }
+            }
+
+            const newRow = rowNode.type.create(rowNode.attrs, newCells);
+            newRows.push(newRow);
+          }
+        });
+
+        const newTable = tableNode.type.create(tableNode.attrs, newRows);
+        tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
+
+        console.log('[COLUMN-ADD] Transaction created for column insertion after index');
+        return true;
+      } catch (error) {
+        console.error('[COLUMN-ADD] Error in direct table manipulation:', error);
+        return false;
+      }
+    }).run();
+
+    console.log('[COLUMN-ADD] Direct manipulation result:', result);
+
+    // Log table structure after operation
+    setTimeout(() => {
+      if (tableElement) {
+        const rows = tableElement.querySelectorAll('tr');
+        console.log('[COLUMN-ADD] Table structure after addColumnAfter:', {
+          totalRows: rows.length,
+          firstRowCells: rows[0]?.children.length || 0
+        });
+      }
+    }, 100);
+
+    onClose?.();
   };
 
   return (
