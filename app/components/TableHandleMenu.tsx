@@ -131,10 +131,122 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
 
   const handleDelete = () => {
     if (orientation === "row") {
-      executeTableCommand(index, 0, () => editor.commands.deleteRow());
+      handleDeleteRow();
     } else {
-      executeTableCommand(0, index, () => editor.commands.deleteColumn());
+      handleDeleteColumn();
     }
+  };
+
+  const handleDeleteRow = () => {
+    // Direct table manipulation using ProseMirror transactions
+    const result = editor.chain().focus().command(({ tr, state }) => {
+      try {
+        // Find the table node in the document
+        let tableNode: any = null;
+        let tablePos = 0;
+
+        state.doc.descendants((node, pos) => {
+          if (node.type.name === 'table') {
+            tableNode = node;
+            tablePos = pos;
+            return false as any;
+          }
+        });
+
+        if (!tableNode) {
+          return false;
+        }
+
+        // Don't delete if it's the only row
+        const rowCount = tableNode.childCount;
+        if (rowCount <= 1) {
+          return false;
+        }
+
+        // Create new table structure by removing row at specific index
+        const newRows: any[] = [];
+        let rowIndex = 0;
+
+        tableNode.forEach((rowNode: any) => {
+          if (rowNode.type.name === 'tableRow') {
+            // Skip the row at the target index (delete it)
+            if (rowIndex !== index) {
+              newRows.push(rowNode);
+            }
+            rowIndex++;
+          }
+        });
+
+        const newTable = tableNode.type.create(tableNode.attrs, newRows);
+        tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
+
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }).run();
+
+    onClose?.();
+  };
+
+  const handleDeleteColumn = () => {
+    // Direct table manipulation using ProseMirror transactions
+    const result = editor.chain().focus().command(({ tr, state }) => {
+      try {
+        // Find the table node in the document
+        let tableNode: any = null;
+        let tablePos = 0;
+
+        state.doc.descendants((node, pos) => {
+          if (node.type.name === 'table') {
+            tableNode = node;
+            tablePos = pos;
+            return false as any;
+          }
+        });
+
+        if (!tableNode) {
+          return false;
+        }
+
+        // Check if we have more than one column before deleting
+        const firstRow = tableNode.firstChild;
+        if (!firstRow || firstRow.childCount <= 1) {
+          return false; // Don't delete if it's the only column
+        }
+
+        // Create new table structure by removing column at specific index
+        const newRows: any[] = [];
+
+        tableNode.forEach((rowNode: any) => {
+          if (rowNode.type.name === 'tableRow') {
+            const newCells: any[] = [];
+            let cellIndex = 0;
+
+            // Copy existing cells, skipping the cell at target index
+            rowNode.forEach((cellNode: any) => {
+              // Skip the cell at the target index (delete it)
+              if (cellIndex !== index) {
+                newCells.push(cellNode);
+              }
+              cellIndex++;
+            });
+
+            const newRow = rowNode.type.create(rowNode.attrs, newCells);
+            newRows.push(newRow);
+          }
+        });
+
+        const newTable = tableNode.type.create(tableNode.attrs, newRows);
+        tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
+
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }).run();
+
+    onClose?.();
   };
 
   const handleAddAbove = () => {
@@ -240,6 +352,7 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
         // Create new table structure by adding row at specific index
         const newRows: any[] = [];
         let rowIndex = 0;
+        let newRowAdded = false;
 
         tableNode.forEach((rowNode: any) => {
           if (rowNode.type.name === 'tableRow') {
@@ -261,15 +374,15 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
 
               const newRow = rowNode.type.create(rowNode.attrs, newCells);
               newRows.push(newRow);
+              newRowAdded = true;
             }
 
             rowIndex++;
           }
         });
 
-        // If target index is at or beyond the end, add new row at the end
-        const insertIndex = index + 1;
-        if (insertIndex >= tableNode.childCount) {
+        // Only add at the end if we haven't already added a row
+        if (!newRowAdded && index >= tableNode.childCount - 1) {
           const lastRow = tableNode.lastChild;
           if (lastRow && lastRow.type.name === 'tableRow') {
             const newCells: any[] = [];
@@ -399,6 +512,7 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
           if (rowNode.type.name === 'tableRow') {
             const newCells: any[] = [];
             let cellIndex = 0;
+            let newCellAdded = false;
 
             // Copy existing cells, inserting new cell at target index
             rowNode.forEach((cellNode: any) => {
@@ -412,14 +526,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
                   state.schema.nodes.tableParagraph.create()
                 );
                 newCells.push(newCell);
+                newCellAdded = true;
               }
 
               cellIndex++;
             });
 
-            // If target index is at or beyond the end, add new cell at the end
-            const insertIndex = index + 1;
-            if (insertIndex >= rowNode.childCount) {
+            // Only add at the end if we haven't already added a cell
+            if (!newCellAdded && index >= rowNode.childCount - 1) {
               const lastCell = rowNode.lastChild;
               if (lastCell) {
                 const newCell = lastCell.type.create(
