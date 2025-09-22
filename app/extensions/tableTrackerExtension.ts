@@ -384,17 +384,33 @@ class TableTrackerView {
   }
 
   private findTableNode(): { node: any; pos: number } | null {
-    const { state } = this.view;
-    let tableNode: { node: any; pos: number } | null = null;
+    // Use the DOM reference from state to find the correct table node
+    if (!this.state.tableElement) {
+      console.error('[TableTracker] No tableElement in state for drag operation');
+      return null;
+    }
 
-    state.doc.descendants((node, pos) => {
-      if (node.type.name === 'table') {
-        tableNode = { node, pos };
-        return false; // Stop iteration
+    try {
+      // Use posAtDOM to directly convert DOM element to ProseMirror position
+      const pos = this.view.posAtDOM(this.state.tableElement, 0);
+      const resolvedPos = this.view.state.doc.resolve(pos);
+
+      // Walk up the node hierarchy to find the table node
+      for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+        const node = resolvedPos.node(depth);
+        if (node.type.name === 'table') {
+          const tablePos = resolvedPos.start(depth) - 1;
+          console.log(`[TableTracker] Found correct table node at pos ${tablePos} for drag operation`);
+          return { node, pos: tablePos };
+        }
       }
-    });
 
-    return tableNode;
+      console.error('[TableTracker] No table node found in parent hierarchy');
+      return null;
+    } catch (error) {
+      console.error('[TableTracker] Error finding table node for drag:', error);
+      return null;
+    }
   }
 
   private moveRowInTable(tablePos: number, fromIndex: number, toIndex: number) {
