@@ -58,6 +58,38 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
   tableElement,
   onClose,
 }) => {
+  // Helper to find the correct table node using DOM reference - SIMPLIFIED
+  const findCorrectTableNode = () => {
+    if (!tableElement || !editor) {
+      console.error('TableHandleMenu: No tableElement or editor provided');
+      return null;
+    }
+
+    try {
+      // Use TipTap/ProseMirror's built-in posAtDOM to directly convert DOM to ProseMirror position
+      const view = editor.view;
+      const pos = view.posAtDOM(tableElement, 0);
+
+      // Get the ProseMirror node at that position
+      const resolvedPos = view.state.doc.resolve(pos);
+
+      // Find the table node by walking up the node tree from this position
+      for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+        const node = resolvedPos.node(depth);
+        if (node.type.name === 'table') {
+          const tablePos = resolvedPos.start(depth) - 1; // Get the position before the table
+          console.log(`[TableHandleMenu] Found table node at pos ${tablePos} using posAtDOM`);
+          return { node, pos: tablePos };
+        }
+      }
+
+      console.error('[TableHandleMenu] No table node found in parent hierarchy');
+      return null;
+    } catch (error) {
+      console.error('[TableHandleMenu] Error finding table node:', error);
+      return null;
+    }
+  };
   // Helper to execute table command with proper cell selection
   const executeTableCommand = (rowIndex: number, colIndex: number, command: () => void) => {
     if (!editor) {
@@ -73,21 +105,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
         return;
       }
 
-      // Fallback: Find and select the appropriate cell manually
-      let tableNode: any = null;
-      let tablePos = 0;
-
-      editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === 'table') {
-          tableNode = node;
-          tablePos = pos;
-          return false as any; // Stop searching
-        }
-      });
-
-      if (!tableNode) {
+      // Fallback: Find and select the appropriate cell manually using correct table
+      const tableInfo = findCorrectTableNode();
+      if (!tableInfo) {
+        console.error('[executeTableCommand] Could not find table node');
         return;
       }
+
+      const { node: tableNode, pos: tablePos } = tableInfo;
 
       // Find the target cell position
       let cellPos = -1;
@@ -141,21 +166,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleDeleteRow] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Don't delete if it's the only row
         const rowCount = tableNode.childCount;
@@ -193,21 +211,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleDeleteColumn] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Check if we have more than one column before deleting
         const firstRow = tableNode.firstChild;
@@ -253,21 +264,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleAddAbove] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Create new table structure by adding row at specific index
         const newRows: any[] = [];
@@ -333,21 +337,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleAddBelow] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Create new table structure by adding row at specific index
         const newRows: any[] = [];
@@ -416,21 +413,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleAddLeft] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Create new table structure by adding column at specific index
         const newRows: any[] = [];
@@ -489,21 +479,14 @@ export const TableHandleMenu: FC<TableHandleMenuProps> = ({
     // Direct table manipulation using ProseMirror transactions
     const result = editor.chain().focus().command(({ tr, state }) => {
       try {
-        // Find the table node in the document
-        let tableNode: any = null;
-        let tablePos = 0;
-
-        state.doc.descendants((node, pos) => {
-          if (node.type.name === 'table') {
-            tableNode = node;
-            tablePos = pos;
-            return false as any;
-          }
-        });
-
-        if (!tableNode) {
+        // Find the correct table node using DOM reference
+        const tableInfo = findCorrectTableNode();
+        if (!tableInfo) {
+          console.error('[handleAddRight] Could not find table node');
           return false;
         }
+
+        const { node: tableNode, pos: tablePos } = tableInfo;
 
         // Create new table structure by adding column at specific index
         const newRows: any[] = [];
