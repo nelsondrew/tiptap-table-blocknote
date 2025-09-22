@@ -218,33 +218,22 @@ const BlockNoteTableRow = Node.create({
       // Setup DOM structure
       scrollWrapper.appendChild(dom);
 
-      // For testing purposes: hardcode show-scrollbar attribute for 2nd row (index 1)
-      const setupTestScrollbar = () => {
-        const table = scrollWrapper.closest('table');
-        console.log(`[ROW-${rowId}] setupTestScrollbar called, table found:`, !!table);
-        if (table) {
-          const allRows = Array.from(table.querySelectorAll('.table-row-scroll-wrapper'));
-          const rowIndex = allRows.indexOf(scrollWrapper);
-          console.log(`[ROW-${rowId}] row index in table:`, rowIndex, 'total rows:', allRows.length);
-
-          if (rowIndex === 1) { // 2nd row (index 1)
-            scrollWrapper.classList.add('show-scrollbar');
-            console.log(`[ROW-${rowId}] Row ${rowIndex + 1} marked with show-scrollbar for testing`);
-          } else {
-            scrollWrapper.classList.add('hide-scrollbar');
-            console.log(`[ROW-${rowId}] Row ${rowIndex + 1} marked with hide-scrollbar (not index 1)`);
-          }
-        }
+      // Note: Scrollbar classes are now dynamically managed by PaginationPlus
+      // The pagination system will automatically add show-scrollbar/hide-scrollbar based on page breaks
+      const setupDynamicScrollbar = () => {
+        console.log(`[ROW-${rowId}] allowing PaginationPlus to manage scrollbar classes dynamically`);
+        // Initially set to hide-scrollbar, PaginationPlus will update as needed
+        scrollWrapper.classList.add('hide-scrollbar');
       };
 
       // Initial setup
       updateGridColumns(node);
       console.log(`[ROW-${rowId}] initial grid columns set`);
 
-      // Setup test scrollbar and authority first (before observer)
+      // Setup dynamic scrollbar and authority first (before observer)
       setTimeout(() => {
         console.log(`[ROW-${rowId}] starting delayed setup`);
-        setupTestScrollbar();
+        setupDynamicScrollbar();
         setupScrollAuthority();
 
         // Start observing class changes AFTER initial setup to avoid infinite loops
