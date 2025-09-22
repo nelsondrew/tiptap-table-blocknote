@@ -218,22 +218,74 @@ const BlockNoteTableRow = Node.create({
       // Setup DOM structure
       scrollWrapper.appendChild(dom);
 
-      // Note: Scrollbar classes are now dynamically managed by PaginationPlus
-      // The pagination system will automatically add show-scrollbar/hide-scrollbar based on page breaks
-      const setupDynamicScrollbar = () => {
-        console.log(`[ROW-${rowId}] allowing PaginationPlus to manage scrollbar classes dynamically`);
-        // Initially set to hide-scrollbar, PaginationPlus will update as needed
-        scrollWrapper.classList.add('hide-scrollbar');
+      // Automatically assign show-scrollbar to the last row of the table
+      const setupLastRowScrollbar = () => {
+        // Find the parent table to determine row position
+        const findParentTable = () => {
+          let current = scrollWrapper.parentElement;
+          while (current) {
+            if (current.classList.contains('bn-table') || current.tagName === 'TABLE') {
+              return current;
+            }
+            current = current.parentElement;
+          }
+          return null;
+        };
+
+        const updateScrollbarClass = () => {
+          const table = findParentTable();
+          if (!table) {
+            console.log(`[ROW-${rowId}] table not found, defaulting to hide-scrollbar`);
+            scrollWrapper.classList.remove('show-scrollbar');
+            scrollWrapper.classList.add('hide-scrollbar');
+            return;
+          }
+
+          // Get all row wrappers in this table
+          const allRowWrappers = table.querySelectorAll('.table-row-scroll-wrapper');
+          const lastRowWrapper = allRowWrappers[allRowWrappers.length - 1];
+
+          // Check if this is the last row
+          if (lastRowWrapper === scrollWrapper) {
+            console.log(`[ROW-${rowId}] is LAST ROW - assigning show-scrollbar`);
+            scrollWrapper.classList.remove('hide-scrollbar');
+            scrollWrapper.classList.add('show-scrollbar');
+          } else {
+            console.log(`[ROW-${rowId}] is NOT last row - assigning hide-scrollbar`);
+            scrollWrapper.classList.remove('show-scrollbar');
+            scrollWrapper.classList.add('hide-scrollbar');
+          }
+        };
+
+        // Update immediately
+        updateScrollbarClass();
+
+        // Also update when DOM changes (when rows are added/removed)
+        const observer = new MutationObserver(() => {
+          setTimeout(updateScrollbarClass, 10); // Small delay to ensure DOM is updated
+        });
+
+        // Observe changes in the parent table
+        const table = findParentTable();
+        if (table) {
+          observer.observe(table, {
+            childList: true,
+            subtree: true
+          });
+        }
+
+        return observer;
       };
 
       // Initial setup
       updateGridColumns(node);
       console.log(`[ROW-${rowId}] initial grid columns set`);
 
-      // Setup dynamic scrollbar and authority first (before observer)
+      // Setup last row scrollbar detection and authority
+      let tableObserver: MutationObserver | null = null;
       setTimeout(() => {
         console.log(`[ROW-${rowId}] starting delayed setup`);
-        setupDynamicScrollbar();
+        tableObserver = setupLastRowScrollbar();
         setupScrollAuthority();
 
         // Start observing class changes AFTER initial setup to avoid infinite loops
@@ -299,11 +351,15 @@ const BlockNoteTableRow = Node.create({
             console.log(`[ROW-${rowId}] removed from scroll authority candidates`);
           }
 
-          // Note: No subscription to unsubscribe from - handled by table level
-
           // Stop observing mutations
           scrollAuthorityObserver.disconnect();
           console.log(`[ROW-${rowId}] mutation observer disconnected`);
+
+          // Clean up table observer
+          if (tableObserver) {
+            tableObserver.disconnect();
+            console.log(`[ROW-${rowId}] table observer disconnected`);
+          }
 
           // Note: No individual scroll listener to remove - handled by table delegation
         }
@@ -637,6 +693,29 @@ export const BlockNoteTable = Table.extend({
                 });
               }, 0);
             }
+
+            // Update scrollbar classes after table structure changes
+            setTimeout(() => {
+              const updateAllScrollbarClasses = () => {
+                const allRowWrappers = table.querySelectorAll('.table-row-scroll-wrapper');
+                console.log(`[TABLE-${tableId}] updating scrollbar classes for ${allRowWrappers.length} rows`);
+
+                allRowWrappers.forEach((wrapper, index) => {
+                  const isLastRow = index === allRowWrappers.length - 1;
+                  if (isLastRow) {
+                    wrapper.classList.remove('hide-scrollbar');
+                    wrapper.classList.add('show-scrollbar');
+                    console.log(`[TABLE-${tableId}] row ${index} is LAST ROW - assigned show-scrollbar`);
+                  } else {
+                    wrapper.classList.remove('show-scrollbar');
+                    wrapper.classList.add('hide-scrollbar');
+                    console.log(`[TABLE-${tableId}] row ${index} is NOT last row - assigned hide-scrollbar`);
+                  }
+                });
+              };
+
+              updateAllScrollbarClasses();
+            }, 50); // Small delay to ensure DOM is fully updated
 
             return true;
           } catch (error) {
