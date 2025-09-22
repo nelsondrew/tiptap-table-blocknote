@@ -57,7 +57,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       const unsubscribe = tableTracker.onUpdate((newState: TableTrackerState) => {
         // Don't update state if menu is open to prevent handles from disappearing
         if (!isMenuOpenRef.current) {
-          console.log(newState, "new state")
           setState({ ...newState });
           tableStateRef.current = { ...newState };
         }
@@ -330,7 +329,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
           )}
 
         {/* Extend Buttons */}
-        {renderButton(
+        {/* {renderButton(
           addOrRemoveRowsButton,
           "addOrRemoveRows",
           handleAddRemoveRows,
@@ -343,7 +342,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
           handleAddRemoveColumns,
           "table-handle-columns-container",
           state.showAddOrRemoveColumnsButton
-        )}
+        )} */}
       </FloatingPortal>
     </>
   );
