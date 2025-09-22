@@ -33,14 +33,10 @@ export type TableTrackerAPI = {
 
 // Helper function to get child index - handles table structure with wrappers
 function getChildIndex(node: Element): number {
-  console.log(`🔍 getChildIndex - Starting with node:`, node.tagName, node);
-
   if (node.tagName === 'TD' || node.tagName === 'TH') {
     // For table cells, get index within the row
     const siblings = Array.from(node.parentElement!.children);
-    const index = siblings.indexOf(node);
-    console.log(`🔍 getChildIndex - Cell index in row:`, index, `Siblings:`, siblings.map(s => s.tagName));
-    return index;
+    return siblings.indexOf(node);
   } else if (node.tagName === 'TR') {
     // For table rows, we need to find the row wrapper's position in tbody
     const rowWrapper = node.closest('.table-row-wrapper') || node.parentElement;
@@ -49,25 +45,19 @@ function getChildIndex(node: Element): number {
       const tbody = rowWrapper.parentElement;
       if (tbody) {
         const rowWrappers = Array.from(tbody.children);
-        const index = rowWrappers.indexOf(rowWrapper);
-        console.log(`🔍 getChildIndex - Row wrapper index in tbody:`, index, `Row wrappers:`, rowWrappers.map(w => w.className || w.tagName));
-        return index;
+        return rowWrappers.indexOf(rowWrapper);
       }
     } else {
       // Row is direct child of tbody
       const tbody = node.parentElement!;
       const rows = Array.from(tbody.children);
-      const index = rows.indexOf(node);
-      console.log(`🔍 getChildIndex - Direct row index in tbody:`, index, `Rows:`, rows.map(r => r.tagName));
-      return index;
+      return rows.indexOf(node);
     }
   }
 
   // Fallback to original logic
   const siblings = Array.from(node.parentElement!.children);
-  const index = siblings.indexOf(node);
-  console.log(`🔍 getChildIndex - Fallback index:`, index, `Siblings:`, siblings.map(s => s.tagName));
-  return index;
+  return siblings.indexOf(node);
 }
 
 // Finds the DOM element corresponding to the table cell that the target element is in
@@ -197,21 +187,13 @@ class TableTrackerView {
     let showAddOrRemoveColumnsButton = false;
 
     if (target.type === "cell") {
-      console.log(`📍 CELL TRACKING - Target cell:`, target.domNode);
-      console.log(`📍 CELL TRACKING - Cell parent (TR):`, target.domNode.parentElement);
-      console.log(`📍 CELL TRACKING - TBody:`, target.tbodyNode);
-
       colIndex = getChildIndex(target.domNode);
       rowIndex = getChildIndex(target.domNode.parentElement!);
-
-      console.log(`📍 CELL TRACKING - Calculated colIndex: ${colIndex}, rowIndex: ${rowIndex}`);
 
       // Determine if this is the last row/column (for add/remove buttons)
       const tbody = target.tbodyNode;
       const numRows = tbody?.children.length || 0;
       const numCols = tbody?.children[0]?.children.length || 0;
-
-      console.log(`📍 CELL TRACKING - Total rows: ${numRows}, Total cols: ${numCols}`);
 
       // Show buttons for any cell in the last row or last column
       showAddOrRemoveRowsButton = rowIndex === numRows - 1;
@@ -277,8 +259,6 @@ class TableTrackerView {
       this.state.showAddOrRemoveColumnsButton !== showAddOrRemoveColumnsButton;
 
     if (hasChanged) {
-      console.log(`🔄 STATE UPDATE - Setting state.rowIndex to ${rowIndex}, state.colIndex to ${colIndex}`);
-
       this.state = {
         ...this.state,
         show: true,
@@ -292,7 +272,6 @@ class TableTrackerView {
         rowIndex,
       };
 
-      console.log(`🔄 STATE UPDATE - Final state.rowIndex: ${this.state.rowIndex}, state.colIndex: ${this.state.colIndex}`);
       this.emitUpdate();
     }
   };
@@ -308,8 +287,6 @@ class TableTrackerView {
 
     event.preventDefault();
     event.dataTransfer!.dropEffect = "move";
-
-    console.log("🎯 DRAG OVER - Global handler");
 
     // Get the bounded mouse coordinates within the table
     const tableRect = this.state.referencePosTable;
@@ -349,7 +326,6 @@ class TableTrackerView {
       this.state.colIndex = colIndex;
       this.state.referencePosCell = tableCellElement.getBoundingClientRect();
 
-      console.log(`🎯 Dragging over ${this.state.draggingState.draggedCellOrientation} ${colIndex}, ${rowIndex}`);
       this.emitUpdate();
     }
 
@@ -509,8 +485,6 @@ class TableTrackerView {
       throw new Error("Attempted to drag table row, but no table block was hovered prior.");
     }
 
-    console.log("🚀 ROW DRAG START - Global handler");
-    
     this.state.draggingState = {
       draggedCellOrientation: "row",
       originalIndex: this.state.rowIndex,
@@ -524,8 +498,6 @@ class TableTrackerView {
       throw new Error("Attempted to drag table column, but no table block was hovered prior.");
     }
 
-    console.log("🚀 COLUMN DRAG START - Global handler");
-    
     this.state.draggingState = {
       draggedCellOrientation: "column",
       originalIndex: this.state.colIndex,
@@ -535,8 +507,6 @@ class TableTrackerView {
   };
 
   public dragEnd = () => {
-    console.log("🏁 DRAG END - Global handler");
-    
     this.state.draggingState = undefined;
     this.emitUpdate();
   };

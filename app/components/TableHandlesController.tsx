@@ -288,10 +288,6 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
           rowHandle.isMounted &&
           state.rowIndex !== undefined && (
             <div ref={rowHandle.ref} style={rowHandle.style}>
-              {(() => {
-                console.log(`🎯 CONTROLLER - Rendering row TableHandle with state.rowIndex: ${state.rowIndex}`);
-                return null;
-              })()}
               <TableHandle
                 editor={editor}
                 orientation="row"
