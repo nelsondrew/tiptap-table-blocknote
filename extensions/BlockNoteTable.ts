@@ -231,7 +231,8 @@ const BlockNoteTableRow = Node.create({
             scrollWrapper.classList.add('show-scrollbar');
             console.log(`[ROW-${rowId}] Row ${rowIndex + 1} marked with show-scrollbar for testing`);
           } else {
-            console.log(`[ROW-${rowId}] Row ${rowIndex + 1} NOT marked with show-scrollbar (not index 1)`);
+            scrollWrapper.classList.add('hide-scrollbar');
+            console.log(`[ROW-${rowId}] Row ${rowIndex + 1} marked with hide-scrollbar (not index 1)`);
           }
         }
       };

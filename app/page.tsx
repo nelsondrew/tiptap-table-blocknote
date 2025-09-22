@@ -268,6 +268,12 @@ const globalStyles = css`
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
   }
+
+  /* Table scroll control styles */
+  .table-row-scroll-wrapper.hide-scrollbar {
+    overflow-x: hidden !important;
+  }
+
 `
 
 const MenuBar = ({ editor }: { editor: any }) => {
