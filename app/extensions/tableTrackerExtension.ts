@@ -615,11 +615,9 @@ class TableTrackerView {
     // Update bounding boxes if table is still visible and connected
     if (this.state.show && this.state.tableElement?.isConnected) {
       const tableBody = this.state.tableElement.querySelector("tbody") || this.state.tableElement.querySelector("table");
-      console.log(tableBody, "table body")
       if (tableBody) {
         // Use calculated bounds from tr elements instead of display: contents table
         const calculatedRect = this.calculateTableBounds(tableBody);
-        console.log(calculatedRect, "calculated table bounds")
         this.state.referencePosTable = calculatedRect;
         this.emitUpdate();
       } else {
