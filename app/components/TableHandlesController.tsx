@@ -57,6 +57,7 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
       const unsubscribe = tableTracker.onUpdate((newState: TableTrackerState) => {
         // Don't update state if menu is open to prevent handles from disappearing
         if (!isMenuOpenRef.current) {
+          console.log(newState, "new state")
           setState({ ...newState });
           tableStateRef.current = { ...newState };
         }
@@ -287,6 +288,10 @@ export const TableHandlesController: FC<TableHandlesControllerProps> = ({
           rowHandle.isMounted &&
           state.rowIndex !== undefined && (
             <div ref={rowHandle.ref} style={rowHandle.style}>
+              {(() => {
+                console.log(`🎯 CONTROLLER - Rendering row TableHandle with state.rowIndex: ${state.rowIndex}`);
+                return null;
+              })()}
               <TableHandle
                 editor={editor}
                 orientation="row"
